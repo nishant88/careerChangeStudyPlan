@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { X, Sparkles } from 'lucide-react';
+import { X, Sparkles, Layers } from 'lucide-react';
 
 export default function AddTopicModal({ isOpen, onClose, onAddTopic }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [skillset, setSkillset] = useState('Technical Architecture');
   const [priority, setPriority] = useState('high');
   const [status, setStatus] = useState('now');
   const [tagInput, setTagInput] = useState('');
@@ -19,6 +20,7 @@ export default function AddTopicModal({ isOpen, onClose, onAddTopic }) {
     onAddTopic({
       title: title.trim(),
       description: description.trim(),
+      skillset,
       priority,
       status,
       tags
@@ -26,6 +28,7 @@ export default function AddTopicModal({ isOpen, onClose, onAddTopic }) {
 
     setTitle('');
     setDescription('');
+    setSkillset('Technical Architecture');
     setPriority('high');
     setStatus('now');
     setTagInput('');
@@ -38,7 +41,7 @@ export default function AddTopicModal({ isOpen, onClose, onAddTopic }) {
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Sparkles size={18} color="var(--accent-primary)" />
-            <h3>Add New Study Topic</h3>
+            <h3>Add New In-App Study Topic</h3>
           </div>
           <button className="btn-icon" onClick={onClose}>
             <X size={16} />
@@ -51,7 +54,7 @@ export default function AddTopicModal({ isOpen, onClose, onAddTopic }) {
             <input 
               type="text" 
               className="form-input" 
-              placeholder="e.g. Distributed Caching & Redis Invalidation Patterns"
+              placeholder="e.g. Distributed Tracing & OpenTelemetry in Automotive Microservices"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
@@ -60,31 +63,42 @@ export default function AddTopicModal({ isOpen, onClose, onAddTopic }) {
           </div>
 
           <div className="form-group">
+            <label className="form-label">Target Skillset</label>
+            <select className="form-select" value={skillset} onChange={(e) => setSkillset(e.target.value)}>
+              <option value="Program Management">Program Management & Delivery Rigor</option>
+              <option value="Technical Architecture">Technical Architecture & APIs</option>
+              <option value="Data & SQL Analytics">Data Analytics & SQL Telemetry</option>
+              <option value="Product Strategy">Product Strategy & Prioritization</option>
+              <option value="Executive Communication">Executive & Consulting Communication</option>
+            </select>
+          </div>
+
+          <div className="form-group">
             <label className="form-label">Why I Want to Learn This (Context / Intent)</label>
             <textarea 
               className="form-textarea" 
-              placeholder="e.g. Need deeper technical fluency to review caching architecture with dealer platform backend architects..."
+              placeholder="e.g. Need deeper system observability knowledge to diagnose P95 latency spikes during workshop morning intake rush..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              rows={3}
+              rows={2}
             />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
             <div className="form-group">
-              <label className="form-label">Crawler Priority</label>
+              <label className="form-label">Lesson Synthesis Priority</label>
               <select className="form-select" value={priority} onChange={(e) => setPriority(e.target.value)}>
-                <option value="high">High (3–4 fresh finds/day)</option>
-                <option value="medium">Medium (2 fresh finds/day)</option>
-                <option value="low">Low (1 fresh find/day)</option>
+                <option value="high">High (P0 - 3 lessons/day)</option>
+                <option value="medium">Medium (P1 - 2 lessons/day)</option>
+                <option value="low">Low (P2 - 1 lesson/day)</option>
               </select>
             </div>
 
             <div className="form-group">
-              <label className="form-label">Initial Column</label>
+              <label className="form-label">Initial Backlog Column</label>
               <select className="form-select" value={status} onChange={(e) => setStatus(e.target.value)}>
-                <option value="now">Now (Crawl starts today)</option>
-                <option value="next">Next (Queue for later)</option>
+                <option value="now">Now (Crawl & synthesize today)</option>
+                <option value="next">Next (Queue for future)</option>
                 <option value="someday">Someday (Idea backlog)</option>
               </select>
             </div>
@@ -95,7 +109,7 @@ export default function AddTopicModal({ isOpen, onClose, onAddTopic }) {
             <input 
               type="text" 
               className="form-input" 
-              placeholder="e.g. Architecture, Caching, Backend"
+              placeholder="e.g. Architecture, Telemetry, Automotive"
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
             />
@@ -106,7 +120,7 @@ export default function AddTopicModal({ isOpen, onClose, onAddTopic }) {
               Cancel
             </button>
             <button type="submit" className="btn-primary">
-              <span>Add Topic & Enable Crawl</span>
+              <span>Add Topic & Generate Lessons</span>
             </button>
           </div>
         </form>

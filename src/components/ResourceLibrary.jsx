@@ -2,26 +2,27 @@ import React, { useState } from 'react';
 import { 
   Search, 
   Bookmark, 
-  ExternalLink, 
   Check, 
   Trash2, 
-  Filter, 
   Edit2, 
-  FileText 
+  BookOpen,
+  Layers,
+  Award
 } from 'lucide-react';
 
 export default function ResourceLibrary({ 
   items = [], 
   availableTopics = [], 
-  availableDomains = [], 
+  availableSkillsets = [], 
   onFilterChange, 
   onUpdateNotes, 
   onToggleRead, 
-  onRemoveItem 
+  onRemoveItem,
+  onOpenReader 
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTopic, setSelectedTopic] = useState('');
-  const [selectedDomain, setSelectedDomain] = useState('');
+  const [selectedSkillset, setSelectedSkillset] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [activeNotesId, setActiveNotesId] = useState(null);
   const [notesBuffer, setNotesBuffer] = useState('');
@@ -29,24 +30,24 @@ export default function ResourceLibrary({
   const handleSearch = (e) => {
     const val = e.target.value;
     setSearchTerm(val);
-    onFilterChange({ search: val, topic: selectedTopic, domain: selectedDomain, status: selectedStatus });
+    onFilterChange({ search: val, topic: selectedTopic, skillset: selectedSkillset, status: selectedStatus });
   };
 
   const handleTopicChange = (e) => {
     const val = e.target.value;
     setSelectedTopic(val);
-    onFilterChange({ search: searchTerm, topic: val, domain: selectedDomain, status: selectedStatus });
+    onFilterChange({ search: searchTerm, topic: val, skillset: selectedSkillset, status: selectedStatus });
   };
 
-  const handleDomainChange = (e) => {
+  const handleSkillsetChange = (e) => {
     const val = e.target.value;
-    setSelectedDomain(val);
-    onFilterChange({ search: searchTerm, topic: selectedTopic, domain: val, status: selectedStatus });
+    setSelectedSkillset(val);
+    onFilterChange({ search: searchTerm, topic: selectedTopic, skillset: val, status: selectedStatus });
   };
 
   const handleStatusChange = (status) => {
     setSelectedStatus(status);
-    onFilterChange({ search: searchTerm, topic: selectedTopic, domain: selectedDomain, status });
+    onFilterChange({ search: searchTerm, topic: selectedTopic, skillset: selectedSkillset, status });
   };
 
   const handleOpenNotes = (item) => {
@@ -67,9 +68,9 @@ export default function ResourceLibrary({
     <div>
       <div className="section-header">
         <div>
-          <h2 className="section-title">Saved Resource Library</h2>
+          <h2 className="section-title">Saved Knowledge & Lesson Library</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '4px' }}>
-            High-signal articles, papers, and guides saved from your daily crawl feeds. Add personal takeaways and filter by topic or publisher.
+            Your permanent in-app repository of master lessons, architectural blueprints, and copyable workplace artifacts.
           </p>
         </div>
       </div>
@@ -81,7 +82,7 @@ export default function ResourceLibrary({
           <Search size={16} color="var(--text-muted)" />
           <input 
             type="text" 
-            placeholder="Search saved resources, topics, or your personal notes..."
+            placeholder="Search in-app lessons, topics, concepts, or your notes..."
             value={searchTerm}
             onChange={handleSearch}
           />
@@ -92,24 +93,24 @@ export default function ResourceLibrary({
           <select 
             className="form-select" 
             style={{ padding: '8px 12px', fontSize: '0.85rem' }}
-            value={selectedTopic}
-            onChange={handleTopicChange}
+            value={selectedSkillset}
+            onChange={handleSkillsetChange}
           >
-            <option value="">All Topics</option>
-            {availableTopics.map((topic, i) => (
-              <option key={i} value={topic}>{topic}</option>
+            <option value="">All Skillsets</option>
+            {availableSkillsets.map((skill, i) => (
+              <option key={i} value={skill}>{skill}</option>
             ))}
           </select>
 
           <select 
             className="form-select" 
             style={{ padding: '8px 12px', fontSize: '0.85rem' }}
-            value={selectedDomain}
-            onChange={handleDomainChange}
+            value={selectedTopic}
+            onChange={handleTopicChange}
           >
-            <option value="">All Publishers</option>
-            {availableDomains.map((dom, i) => (
-              <option key={i} value={dom}>{dom}</option>
+            <option value="">All Topics</option>
+            {availableTopics.map((topic, i) => (
+              <option key={i} value={topic}>{topic}</option>
             ))}
           </select>
 
@@ -144,21 +145,27 @@ export default function ResourceLibrary({
       {items.length === 0 ? (
         <div className="glass-panel empty-digest" style={{ padding: '48px 24px' }}>
           <Bookmark className="empty-digest-icon" style={{ color: 'var(--text-muted)' }} />
-          <h4>No Saved Resources Found</h4>
-          <p>When you click "Save for Later" on daily digest articles, they appear here in your permanent searchable knowledge library.</p>
+          <h4>No Saved Lessons Found</h4>
+          <p>When you click "Save for Later" on morning topic briefs, they appear here in your permanent in-app knowledge library.</p>
         </div>
       ) : (
         <div className="library-grid">
           {items.map(item => (
             <div key={item.id} className="glass-panel library-card">
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span className="digest-topic-tag">{item.topic_title}</span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+                  <span className="skillset-badge">
+                    <Layers size={11} />
+                    <span>{item.skillset || 'Program Management'}</span>
+                  </span>
+
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span className="digest-source-pill">
-                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-primary)' }} />
-                      {item.domain}
-                    </span>
+                    {item.skillset_priority && (
+                      <span className="priority-pill" style={{ fontSize: '0.65rem' }}>
+                        {item.skillset_priority}
+                      </span>
+                    )}
+
                     {item.status === 'read' && (
                       <span style={{ 
                         fontSize: '0.7rem', 
@@ -174,11 +181,12 @@ export default function ResourceLibrary({
                   </div>
                 </div>
 
-                <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '8px', lineHeight: 1.35 }}>
-                  <a href={item.url} target="_blank" rel="noopener noreferrer">
-                    {item.title}
-                    <ExternalLink size={13} style={{ display: 'inline', marginLeft: '6px', opacity: 0.7 }} />
-                  </a>
+                <h3 
+                  style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '8px', lineHeight: 1.35, cursor: 'pointer' }}
+                  onClick={() => onOpenReader(item)}
+                  title="Open full in-app lesson"
+                >
+                  {item.title}
                 </h3>
 
                 <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '14px' }}>
@@ -190,7 +198,7 @@ export default function ResourceLibrary({
                   <div style={{ marginBottom: '14px' }}>
                     <textarea 
                       className="notes-editor"
-                      placeholder="Add key takeaways, quotes, or application ideas from this article..."
+                      placeholder="Add key takeaways, quotes, or application ideas from this lesson..."
                       value={notesBuffer}
                       onChange={(e) => setNotesBuffer(e.target.value)}
                     />
@@ -227,22 +235,31 @@ export default function ResourceLibrary({
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '12px', borderTop: '1px solid var(--border-subtle)' }}>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button 
+                    className="btn-primary" 
+                    style={{ fontSize: '0.8rem', padding: '5px 12px' }}
+                    onClick={() => onOpenReader(item)}
+                  >
+                    <BookOpen size={13} />
+                    <span>Open Lesson</span>
+                  </button>
+
+                  <button 
                     className="btn-action btn-action-read" 
                     onClick={() => onToggleRead(item.id)}
                     title={item.status === 'read' ? 'Mark as Unread' : 'Mark as Read'}
                   >
                     <Check size={13} />
-                    <span>{item.status === 'read' ? 'Read' : 'Mark Read'}</span>
+                    <span>{item.status === 'read' ? 'Completed' : 'Mark Read'}</span>
                   </button>
 
                   <button 
                     className="btn-action btn-secondary" 
-                    style={{ fontSize: '0.8rem', padding: '6px 10px' }}
+                    style={{ fontSize: '0.8rem', padding: '5px 10px' }}
                     onClick={() => handleOpenNotes(item)}
                     title="Add or edit personal notes"
                   >
                     <Edit2 size={13} />
-                    <span>{item.personal_notes ? 'Edit Notes' : '+ Notes'}</span>
+                    <span>{item.personal_notes ? 'Notes' : '+ Notes'}</span>
                   </button>
                 </div>
 

@@ -7,6 +7,7 @@ import ResourceLibrary from './components/ResourceLibrary';
 import AddTopicModal from './components/AddTopicModal';
 import AddWeekModal from './components/AddWeekModal';
 import SettingsModal from './components/SettingsModal';
+import LessonReaderModal from './components/LessonReaderModal';
 
 import {
   fetchStats,
@@ -38,9 +39,13 @@ export default function App() {
   const [digest, setDigest] = useState([]);
   const [phases, setPhases] = useState([]);
   const [groupedTopics, setGroupedTopics] = useState({ now: [], next: [], someday: [] });
-  const [libraryData, setLibraryData] = useState({ items: [], availableTopics: [], availableDomains: [] });
+  const [libraryData, setLibraryData] = useState({ items: [], availableTopics: [], availableSkillsets: [] });
 
-  // UI / Modal State
+  // Reader Modal State
+  const [selectedLesson, setSelectedLesson] = useState(null);
+  const [isReaderOpen, setIsReaderOpen] = useState(false);
+
+  // Modals State
   const [isCrawling, setIsCrawling] = useState(false);
   const [isAddTopicOpen, setIsAddTopicOpen] = useState(false);
   const [isAddWeekOpen, setIsAddWeekOpen] = useState(false);
@@ -87,19 +92,42 @@ export default function App() {
     loadAllData();
   }, []);
 
+  // --- OPEN IN-APP LESSON READER ---
+  const handleOpenReader = (item) => {
+    if (!item) return;
+
+    // Normalizing between crawled_resources, seed_resources, and weeks
+    const normalizedLesson = {
+      id: item.id,
+      title: item.title,
+      summary: item.summary || item.learning_goal,
+      content_body: item.content_body,
+      key_takeaways: item.key_takeaways,
+      actionable_template: item.actionable_template,
+      skillset: item.skillset || 'Program Management',
+      skillset_priority: item.skillset_priority || 'P0 - Core TPM Discipline',
+      read_time: item.read_time || '8 min read',
+      personal_notes: item.personal_notes || item.notes || '',
+      status: item.status || (item.completed ? 'read' : 'pending'),
+      isWeek: Boolean(item.week_number)
+    };
+
+    setSelectedLesson(normalizedLesson);
+    setIsReaderOpen(true);
+  };
+
   // --- CRAWLER TRIGGER ---
   const handleTriggerCrawl = async () => {
     setIsCrawling(true);
     try {
       const res = await triggerCrawler();
-      showToast(`Crawl complete: ${res.count} fresh resources discovered!`);
-      // Reload digest & stats
+      showToast(`In-app lesson synthesis complete: ${res.count} fresh lessons ready!`);
       const [dig, st] = await Promise.all([fetchDigest(), fetchStats()]);
       setDigest(dig.digest || []);
       setStats(st);
     } catch (err) {
       console.error(err);
-      showToast('Crawl encounter an issue');
+      showToast('Synthesis encountered an issue');
     } finally {
       setIsCrawling(false);
     }
@@ -113,7 +141,7 @@ export default function App() {
       const [lib, st] = await Promise.all([fetchLibrary(), fetchStats()]);
       setLibraryData(lib);
       setStats(st);
-      showToast('Saved to your Resource Library!');
+      showToast('Saved to your In-App Knowledge Library!');
     } catch (err) {
       console.error(err);
     }
@@ -126,7 +154,7 @@ export default function App() {
       const [lib, st] = await Promise.all([fetchLibrary(), fetchStats()]);
       setLibraryData(lib);
       setStats(st);
-      showToast('Marked as read! Streak updated.');
+      showToast('Lesson completed! Daily streak updated.');
     } catch (err) {
       console.error(err);
     }
@@ -183,7 +211,7 @@ export default function App() {
       setPhases(planRes.phases || []);
       setGroupedTopics(topicsRes.grouped || { now: [], next: [], someday: [] });
       setStats(statsRes);
-      showToast('Custom week added to study plan');
+      showToast('Custom week added to curriculum');
     } catch (err) {
       console.error(err);
     }
@@ -204,7 +232,8 @@ export default function App() {
   const handleQuickAddTopic = async (title) => {
     await handleAddTopic({
       title,
-      description: 'Quick-added topic for daily crawling',
+      description: 'Quick-added topic for in-app daily lesson synthesis',
+      skillset: 'Technical Architecture',
       priority: 'high',
       status: 'now',
       tags: ['QuickAdd']
@@ -224,10 +253,10 @@ export default function App() {
 
   const handleDeleteTopic = async (id) => {
     try {
-      await deleteTopic(id, false); // Archive
+      await deleteTopic(id, false);
       const topicsRes = await fetchTopics();
       setGroupedTopics(topicsRes.grouped || { now: [], next: [], someday: [] });
-      showToast('Topic archived and removed from crawls');
+      showToast('Topic archived and excluded from future lessons');
     } catch (err) {
       console.error(err);
     }
@@ -248,7 +277,7 @@ export default function App() {
       await updateLibraryNotes(id, notes);
       const lib = await fetchLibrary();
       setLibraryData(lib);
-      showToast('Takeaways saved!');
+      showToast('Personal takeaways saved!');
     } catch (err) {
       console.error(err);
     }
@@ -307,6 +336,7 @@ export default function App() {
               fetchStats().then(setStats);
               showToast('45-min study session logged! Keep the momentum.');
             }}
+            onOpenReader={handleOpenReader}
           />
         )}
 
@@ -317,6 +347,7 @@ export default function App() {
             onReorderWeeks={handleReorderWeeks}
             onOpenAddWeekModal={() => setIsAddWeekOpen(true)}
             onUpdateWeekNotes={handleUpdateWeekNotes}
+            onOpenReader={handleOpenReader}
           />
         )}
 
@@ -333,14 +364,38 @@ export default function App() {
           <ResourceLibrary 
             items={libraryData.items || []}
             availableTopics={libraryData.availableTopics || []}
-            availableDomains={libraryData.availableDomains || []}
+            availableSkillsets={libraryData.availableSkillsets || []}
             onFilterChange={handleFilterLibrary}
             onUpdateNotes={handleUpdateLibraryNotes}
             onToggleRead={handleToggleLibraryRead}
             onRemoveItem={handleRemoveLibraryItem}
+            onOpenReader={handleOpenReader}
           />
         )}
       </main>
+
+      {/* Dedicated In-App Lesson Reader */}
+      <LessonReaderModal 
+        isOpen={isReaderOpen}
+        lesson={selectedLesson}
+        onClose={() => setIsReaderOpen(false)}
+        onSave={selectedLesson && !selectedLesson.isWeek ? (id) => handleSaveDigest(id) : null}
+        onMarkRead={selectedLesson ? (id) => {
+          if (selectedLesson.isWeek) {
+            handleToggleWeekComplete(id, true);
+          } else {
+            handleReadDigest(id);
+          }
+          setIsReaderOpen(false);
+        } : null}
+        onSaveNotes={(id, notes) => {
+          if (selectedLesson?.isWeek) {
+            handleUpdateWeekNotes(id, notes);
+          } else {
+            handleUpdateLibraryNotes(id, notes);
+          }
+        }}
+      />
 
       {/* Modals */}
       <AddTopicModal 

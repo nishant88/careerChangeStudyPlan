@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { 
   Check, 
-  ExternalLink, 
   ChevronUp, 
   ChevronDown, 
   Plus, 
   Briefcase, 
   BookOpen, 
-  Trash2, 
+  Layers,
   Edit3,
   Award 
 } from 'lucide-react';
@@ -17,13 +16,23 @@ export default function StudyPlan({
   onToggleWeekComplete, 
   onReorderWeeks, 
   onOpenAddWeekModal,
-  onUpdateWeekNotes 
+  onUpdateWeekNotes,
+  onOpenReader 
 }) {
   const [activeNotesWeekId, setActiveNotesWeekId] = useState(null);
   const [tempNotes, setTempNotes] = useState('');
+  const [selectedSkillset, setSelectedSkillset] = useState('All');
 
-  // Flatten all weeks to manage ordering
   const allWeeks = phases.flatMap(p => p.weeks || []);
+
+  const skillsetsList = [
+    'All',
+    'Program Management',
+    'Technical Architecture',
+    'Data & SQL Analytics',
+    'Product Strategy',
+    'Executive Communication'
+  ];
 
   const moveWeek = (weekId, direction) => {
     const currentIndex = allWeeks.findIndex(w => w.id === weekId);
@@ -58,9 +67,9 @@ export default function StudyPlan({
     <div>
       <div className="section-header">
         <div>
-          <h2 className="section-title">12-Week Executive Study Curriculum</h2>
+          <h2 className="section-title">12-Week TPM & Product In-App Curriculum</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '4px' }}>
-            Structured TPM rigor, technical depth, and executive communication phases. Reorder, mark completed, or add custom weeks.
+            Structured across 3 developmental phases. Every week features a comprehensive in-app master lesson, architectural blueprint, and ready-to-copy workplace template.
           </p>
         </div>
 
@@ -70,10 +79,30 @@ export default function StudyPlan({
         </button>
       </div>
 
+      {/* Skillset Filter Pills */}
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '24px' }}>
+        {skillsetsList.map((skill, sIdx) => (
+          <button
+            key={sIdx}
+            className={`nav-tab-btn ${selectedSkillset === skill ? 'active' : ''}`}
+            style={{ fontSize: '0.8rem', padding: '5px 14px' }}
+            onClick={() => setSelectedSkillset(skill)}
+          >
+            {skill}
+          </button>
+        ))}
+      </div>
+
       {phases.map(phase => {
-        const phaseWeeks = phase.weeks || [];
-        const completedInPhase = phaseWeeks.filter(w => w.completed).length;
-        const phaseProgress = phaseWeeks.length > 0 ? Math.round((completedInPhase / phaseWeeks.length) * 100) : 0;
+        let phaseWeeks = phase.weeks || [];
+        if (selectedSkillset !== 'All') {
+          phaseWeeks = phaseWeeks.filter(w => (w.skillset || '').toLowerCase().includes(selectedSkillset.toLowerCase()));
+        }
+
+        if (phaseWeeks.length === 0 && selectedSkillset !== 'All') return null;
+
+        const completedInPhase = (phase.weeks || []).filter(w => w.completed).length;
+        const phaseProgress = (phase.weeks || []).length > 0 ? Math.round((completedInPhase / (phase.weeks || []).length) * 100) : 0;
 
         return (
           <div key={phase.id} className="curriculum-phase-group">
@@ -90,7 +119,7 @@ export default function StudyPlan({
                     padding: '2px 8px',
                     borderRadius: '999px'
                   }}>
-                    {completedInPhase}/{phaseWeeks.length} Done ({phaseProgress}%)
+                    {completedInPhase}/{(phase.weeks || []).length} Done ({phaseProgress}%)
                   </span>
                 </div>
                 <p>{phase.description}</p>
@@ -104,7 +133,7 @@ export default function StudyPlan({
 
             {/* Weeks in Phase */}
             <div className="curriculum-weeks-list">
-              {phaseWeeks.map((week, idx) => {
+              {phaseWeeks.map((week) => {
                 const globalIndex = allWeeks.findIndex(w => w.id === week.id);
                 const canMoveUp = globalIndex > 0;
                 const canMoveDown = globalIndex < allWeeks.length - 1;
@@ -122,7 +151,7 @@ export default function StudyPlan({
 
                     {/* Main Content */}
                     <div className="week-main-info">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px', flexWrap: 'wrap' }}>
                         <span style={{ 
                           fontFamily: 'Outfit', 
                           fontWeight: 800, 
@@ -131,7 +160,24 @@ export default function StudyPlan({
                         }}>
                           WEEK {week.week_number}
                         </span>
-                        <h4 style={{ textDecoration: week.completed ? 'line-through' : 'none' }}>
+
+                        <span className="skillset-badge" style={{ fontSize: '0.7rem' }}>
+                          <Layers size={10} />
+                          <span>{week.skillset || 'Program Management'}</span>
+                        </span>
+
+                        <span className="priority-pill" style={{ fontSize: '0.65rem' }}>
+                          {week.skillset_priority || 'P0'}
+                        </span>
+
+                        <h4 
+                          style={{ 
+                            textDecoration: week.completed ? 'line-through' : 'none',
+                            cursor: 'pointer' 
+                          }}
+                          onClick={() => onOpenReader(week)}
+                          title="Open Master Lesson"
+                        >
                           {week.title}
                         </h4>
                       </div>
@@ -144,33 +190,17 @@ export default function StudyPlan({
                         <span><strong>Workplace Action:</strong> {week.action_item}</span>
                       </div>
 
-                      {/* Seed Resources */}
-                      {week.resources && week.resources.length > 0 && (
-                        <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
-                          {week.resources.map((res, rIdx) => (
-                            <a 
-                              key={rIdx} 
-                              href={res.url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              style={{ 
-                                fontSize: '0.775rem', 
-                                color: 'var(--text-secondary)', 
-                                display: 'inline-flex', 
-                                alignItems: 'center', 
-                                gap: '4px',
-                                background: 'var(--bg-secondary)',
-                                padding: '3px 8px',
-                                borderRadius: '4px',
-                                border: '1px solid var(--border-subtle)'
-                              }}
-                            >
-                              <span>{res.title}</span>
-                              <ExternalLink size={11} color="var(--accent-primary)" />
-                            </a>
-                          ))}
-                        </div>
-                      )}
+                      {/* In-App Master Lesson Button */}
+                      <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
+                        <button 
+                          className="btn-primary"
+                          style={{ fontSize: '0.775rem', padding: '4px 12px' }}
+                          onClick={() => onOpenReader(week)}
+                        >
+                          <BookOpen size={13} />
+                          <span>Read Full Master Lesson & Templates</span>
+                        </button>
+                      </div>
 
                       {/* Expandable Notes Editor */}
                       {activeNotesWeekId === week.id ? (

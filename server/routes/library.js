@@ -3,13 +3,13 @@ import db from '../db/index.js';
 
 const router = express.Router();
 
-// GET all saved resources in the library with filters
+// GET all saved lessons in the library with filters
 router.get('/', (req, res) => {
   try {
-    const { search, topic, domain, status } = req.query;
+    const { search, topic, domain, status, skillset, priority } = req.query;
 
     let query = `
-      SELECT cr.*, t.priority, t.tags
+      SELECT cr.*, t.tags
       FROM crawled_resources cr
       LEFT JOIN topics t ON cr.topic_id = t.id
       WHERE cr.status IN ('saved', 'read')
@@ -19,6 +19,16 @@ router.get('/', (req, res) => {
     if (status === 'saved' || status === 'read') {
       query += ' AND cr.status = ?';
       params.push(status);
+    }
+
+    if (skillset) {
+      query += ' AND cr.skillset LIKE ?';
+      params.push(`%${skillset}%`);
+    }
+
+    if (priority) {
+      query += ' AND cr.skillset_priority LIKE ?';
+      params.push(`%${priority}%`);
     }
 
     if (topic) {
@@ -32,30 +42,29 @@ router.get('/', (req, res) => {
     }
 
     if (search) {
-      query += ' AND (cr.title LIKE ? OR cr.summary LIKE ? OR cr.personal_notes LIKE ?)';
-      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+      query += ' AND (cr.title LIKE ? OR cr.summary LIKE ? OR cr.content_body LIKE ? OR cr.personal_notes LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
     }
 
     query += ' ORDER BY COALESCE(cr.saved_at, cr.found_at) DESC';
 
     const items = db.prepare(query).all(...params);
 
-    // Get list of distinct topics and domains for filtering UI
     const topics = db.prepare("SELECT DISTINCT topic_title FROM crawled_resources WHERE status IN ('saved', 'read')").all().map(r => r.topic_title);
-    const domains = db.prepare("SELECT DISTINCT domain FROM crawled_resources WHERE status IN ('saved', 'read')").all().map(r => r.domain);
+    const skillsets = db.prepare("SELECT DISTINCT skillset FROM crawled_resources WHERE status IN ('saved', 'read')").all().map(r => r.skillset).filter(Boolean);
 
     res.json({
       items,
       count: items.length,
       availableTopics: topics,
-      availableDomains: domains
+      availableSkillsets: skillsets
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// PUT /api/library/:id/notes - Update personal notes on a saved resource
+// PUT /api/library/:id/notes - Update personal takeaways on a saved lesson
 router.put('/:id/notes', (req, res) => {
   try {
     const { id } = req.params;
@@ -98,12 +107,12 @@ router.put('/:id/toggle-read', (req, res) => {
   }
 });
 
-// DELETE /api/library/:id - Delete item from library
+// DELETE /api/library/:id - Delete lesson from library
 router.delete('/:id', (req, res) => {
   try {
     const { id } = req.params;
     db.prepare("UPDATE crawled_resources SET status = 'dismissed' WHERE id = ?").run(id);
-    res.json({ success: true, message: 'Item removed from library' });
+    res.json({ success: true, message: 'Lesson removed from library' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

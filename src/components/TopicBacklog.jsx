@@ -1,14 +1,11 @@
 import React from 'react';
 import { 
   Plus, 
-  ArrowRight, 
-  ArrowLeft, 
   Trash2, 
   Sparkles, 
   Radio, 
   Clock, 
-  CheckCircle,
-  Archive 
+  Layers
 } from 'lucide-react';
 
 export default function TopicBacklog({ 
@@ -23,21 +20,21 @@ export default function TopicBacklog({
       title: 'Now (Active Crawl)',
       icon: Radio,
       badgeClass: 'kanban-badge-now',
-      desc: 'Crawled daily at 07:00 AM based on topic priority weighting.'
+      desc: 'Actively crawled daily. Synthesizes full in-app study lessons.'
     },
     {
       id: 'next',
       title: 'Next (Queued)',
       icon: Clock,
       badgeClass: 'kanban-badge-next',
-      desc: 'Queued for upcoming weeks. Move to "Now" to start crawling.'
+      desc: 'Queued for upcoming sprints. Move to Now to begin crawling.'
     },
     {
       id: 'someday',
       title: 'Someday (Backlog)',
       icon: Sparkles,
       badgeClass: 'kanban-badge-someday',
-      desc: 'Ideas and emerging tech to explore in the future.'
+      desc: 'Ideas & emerging engineering trends to study in future.'
     }
   ];
 
@@ -45,9 +42,9 @@ export default function TopicBacklog({
     <div>
       <div className="section-header">
         <div>
-          <h2 className="section-title">Topic Backlog & Crawler Controls</h2>
+          <h2 className="section-title">Topic Backlog & Skillset Management</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '4px' }}>
-            Topics in the <strong>Now</strong> column are actively searched by the daily crawler. Prioritize high, medium, or low to adjust volume.
+            Topics in the <strong>Now</strong> column are actively synthesized by the daily crawler into in-app study lessons. Prioritize by target TPM skillset.
           </p>
         </div>
 
@@ -99,18 +96,24 @@ export default function TopicBacklog({
                     return (
                       <div key={topic.id} className="kanban-card">
                         <div className="kanban-card-top">
-                          <span className={`priority-badge priority-${topic.priority}`}>
-                            {topic.priority} ({topic.priority === 'high' ? '4/day' : topic.priority === 'medium' ? '2/day' : '1/day'})
+                          <span className="skillset-badge" style={{ fontSize: '0.675rem', padding: '2px 7px' }}>
+                            <Layers size={10} />
+                            <span>{topic.skillset || 'Technical Architecture'}</span>
                           </span>
 
-                          <button 
-                            className="btn-icon" 
-                            style={{ width: '26px', height: '26px' }}
-                            onClick={() => onDeleteTopic(topic.id)}
-                            title="Archive topic (stops future crawls)"
-                          >
-                            <Trash2 size={13} />
-                          </button>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span className={`priority-badge priority-${topic.priority}`}>
+                              {topic.priority}
+                            </span>
+                            <button 
+                              className="btn-icon" 
+                              style={{ width: '24px', height: '24px' }}
+                              onClick={() => onDeleteTopic(topic.id)}
+                              title="Archive topic (stops future crawls)"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
                         </div>
 
                         <h4 className="kanban-card-title">{topic.title}</h4>
@@ -137,7 +140,7 @@ export default function TopicBacklog({
 
                         <div className="kanban-card-footer">
                           <span style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>
-                            {col.id === 'now' ? 'Active in Crawler' : 'Crawling paused'}
+                            {col.id === 'now' ? '● Active in Crawler' : '○ Paused'}
                           </span>
 
                           <div className="kanban-move-btns">
@@ -146,7 +149,7 @@ export default function TopicBacklog({
                                 className="btn-secondary" 
                                 style={{ fontSize: '0.725rem', padding: '3px 8px' }}
                                 onClick={() => onMoveTopic(topic.id, 'now')}
-                                title="Promote to Now (starts daily crawling)"
+                                title="Promote to Now (starts daily in-app crawling)"
                               >
                                 {col.id === 'someday' ? '→ Now' : '← Now'}
                               </button>

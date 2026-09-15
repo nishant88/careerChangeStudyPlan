@@ -1121,6 +1121,278 @@ button, input, select, textarea {
   to { transform: translateY(0); opacity: 1; }
 }
 
+/* Reader Modal & In-App Learning Styles */
+.reader-overlay {
+  padding: 16px;
+  z-index: 200;
+}
+
+.reader-modal-container {
+  background: var(--bg-card-solid);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  max-width: 920px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: modal-pop 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reader-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+  gap: 12px;
+}
+
+.reader-readtime {
+  font-size: 0.775rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.reader-hero {
+  padding: 24px 28px 16px 28px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.reader-title {
+  font-size: 1.55rem;
+  font-weight: 800;
+  line-height: 1.3;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.reader-summary {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.reader-nav-tabs {
+  display: flex;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0 20px;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.reader-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: transparent;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.reader-tab-btn:hover {
+  color: var(--text-primary);
+}
+
+.reader-tab-btn.active {
+  color: var(--accent-primary);
+  border-bottom-color: var(--accent-primary);
+}
+
+.reader-body-scroll {
+  padding: 28px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Markdown typography in reader */
+.reader-content-markdown {
+  font-size: 0.975rem;
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+
+.reader-content-markdown h1,
+.reader-content-markdown h2,
+.reader-content-markdown h3 {
+  margin-top: 24px;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+}
+
+.reader-content-markdown h3 {
+  font-size: 1.2rem;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 6px;
+}
+
+.reader-content-markdown p {
+  margin-bottom: 14px;
+  color: var(--text-secondary);
+}
+
+.reader-content-markdown strong {
+  color: var(--text-primary);
+}
+
+.reader-content-markdown ul {
+  margin: 12px 0 16px 20px;
+}
+
+.reader-content-markdown li {
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+}
+
+.reader-content-markdown code {
+  background: var(--bg-secondary);
+  color: var(--accent-primary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.reader-content-markdown pre {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  overflow-x: auto;
+  margin: 16px 0;
+}
+
+.reader-content-markdown pre code {
+  background: transparent;
+  padding: 0;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+/* Takeaways Callout */
+.takeaways-callout-box {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  margin-top: 28px;
+}
+
+.takeaways-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent-amber);
+  margin-bottom: 12px;
+}
+
+.takeaways-callout-box ul {
+  margin-left: 18px;
+}
+
+.takeaways-callout-box li {
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.takeaways-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.takeaway-card {
+  padding: 18px;
+  position: relative;
+  background: var(--bg-secondary);
+  border-left: 3px solid var(--accent-amber);
+}
+
+.takeaway-num {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: var(--accent-amber);
+  margin-bottom: 6px;
+}
+
+.template-code-block {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+/* Skillset & Priority Badges */
+.skillset-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.725rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  background: rgba(99, 102, 241, 0.14);
+  color: var(--accent-primary);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.priority-pill {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--accent-emerald);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.clickable-title {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color var(--transition-fast);
+}
+
+.clickable-title:hover {
+  color: var(--accent-primary);
+}
+
+.title-arrow {
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: all var(--transition-fast);
+}
+
+.clickable-title:hover .title-arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
+
 /* Responsive Media Queries */
 @media (max-width: 1024px) {
   .dashboard-grid {
@@ -1133,6 +1405,9 @@ button, input, select, textarea {
     grid-template-columns: 1fr;
   }
   .library-grid {
+    grid-template-columns: 1fr;
+  }
+  .takeaways-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -1152,4 +1427,8 @@ button, input, select, textarea {
   .app-container {
     padding: 0 16px 40px 16px;
   }
+  .reader-modal-container {
+    max-height: 96vh;
+  }
 }
+

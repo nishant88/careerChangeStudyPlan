@@ -4,11 +4,11 @@ import { phasesData, weeksData, initialBacklogTopics } from './seedData.js';
 export function seedDatabase(force = false) {
   const existingWeeks = db.prepare('SELECT count(*) as count FROM weeks').get();
   if (existingWeeks.count > 0 && !force) {
-    console.log(`[Database] Seed already populated (${existingWeeks.count} weeks found). Skipping seed.`);
+    console.log(`[Database] Seed already populated (${existingWeeks.count} weeks found).`);
     return;
   }
 
-  console.log('[Database] Seeding LevelUp curriculum & initial topics...');
+  console.log('[Database] Populating in-app curriculum lessons & skillset topics...');
 
   const insertPhase = db.prepare(`
     INSERT OR REPLACE INTO phases (phase_number, title, description)
@@ -16,18 +16,28 @@ export function seedDatabase(force = false) {
   `);
 
   const insertWeek = db.prepare(`
-    INSERT INTO weeks (week_number, phase_id, title, learning_goal, action_item, completed, display_order)
-    VALUES (@week_number, @phase_id, @title, @learning_goal, @action_item, 0, @display_order)
+    INSERT INTO weeks (
+      week_number, phase_id, title, learning_goal, action_item, 
+      skillset, skillset_priority, content_body, key_takeaways, actionable_template, read_time,
+      completed, display_order
+    ) VALUES (
+      @week_number, @phase_id, @title, @learning_goal, @action_item,
+      @skillset, @skillset_priority, @content_body, @key_takeaways, @actionable_template, @read_time,
+      0, @display_order
+    )
   `);
 
-  const insertResource = db.prepare(`
-    INSERT INTO seed_resources (week_id, title, url, domain, type)
-    VALUES (@week_id, @title, @url, @domain, @type)
+  const insertSeedResource = db.prepare(`
+    INSERT INTO seed_resources (
+      week_id, title, domain, summary, content_body, key_takeaways, actionable_template, read_time, type
+    ) VALUES (
+      @week_id, @title, @domain, @summary, @content_body, @key_takeaways, @actionable_template, @read_time, 'lesson'
+    )
   `);
 
   const insertTopic = db.prepare(`
-    INSERT INTO topics (title, description, status, priority, is_seed_week, week_id, tags)
-    VALUES (@title, @description, @status, @priority, @is_seed_week, @week_id, @tags)
+    INSERT INTO topics (title, description, skillset, priority, skillset_priority, status, is_seed_week, week_id, tags)
+    VALUES (@title, @description, @skillset, @priority, @skillset_priority, @status, @is_seed_week, @week_id, @tags)
   `);
 
   const transaction = db.transaction(() => {
@@ -47,7 +57,7 @@ export function seedDatabase(force = false) {
       phaseMap[phase.phase_number] = row.id;
     }
 
-    // Insert Weeks & Seed Resources & Link to Topics
+    // Insert Weeks with full in-app master lessons
     for (const week of weeksData) {
       const phaseId = phaseMap[week.phase_number];
       const result = insertWeek.run({
@@ -56,43 +66,55 @@ export function seedDatabase(force = false) {
         title: week.title,
         learning_goal: week.learning_goal,
         action_item: week.action_item,
+        skillset: week.skillset || 'Program Management',
+        skillset_priority: week.skillset_priority || 'P0 - Core TPM Discipline',
+        content_body: week.content_body,
+        key_takeaways: JSON.stringify(week.key_takeaways || []),
+        actionable_template: week.actionable_template || '',
+        read_time: week.read_time || '8 min read',
         display_order: week.week_number
       });
       const weekId = result.lastInsertRowid;
 
-      // Seed resources
-      for (const res of week.resources) {
-        insertResource.run({
-          week_id: weekId,
-          title: res.title,
-          url: res.url,
-          domain: res.domain,
-          type: 'article'
-        });
-      }
+      // Also create a companion in-app seed lesson resource
+      insertSeedResource.run({
+        week_id: weekId,
+        title: `Mastery Guide: ${week.title}`,
+        domain: 'Internal Knowledge Vault',
+        summary: week.learning_goal,
+        content_body: week.content_body,
+        key_takeaways: JSON.stringify(week.key_takeaways || []),
+        actionable_template: week.actionable_template || '',
+        read_time: week.read_time || '8 min read',
+        type: 'lesson'
+      });
 
-      // Also create a linked topic in the study plan
+      // Link to topic
       insertTopic.run({
         title: week.title,
         description: week.learning_goal,
-        status: week.week_number === 1 ? 'now' : 'next',
+        skillset: week.skillset || 'Program Management',
         priority: 'high',
+        skillset_priority: week.skillset_priority || 'P0 - Core TPM Discipline',
+        status: week.week_number === 1 ? 'now' : 'next',
         is_seed_week: 1,
         week_id: weekId,
-        tags: JSON.stringify([`Phase ${week.phase_number}`, 'Curriculum'])
+        tags: JSON.stringify([`Phase ${week.phase_number}`, week.skillset])
       });
     }
 
-    // Insert custom backlog topics
+    // Insert initial backlog topics
     for (const topic of initialBacklogTopics) {
       insertTopic.run({
         title: topic.title,
         description: topic.description,
-        status: topic.status,
-        priority: topic.priority,
+        skillset: topic.skillset || 'Technical Architecture',
+        priority: topic.priority || 'medium',
+        skillset_priority: topic.skillset_priority || 'P1 - High-Value Differentiator',
+        status: topic.status || 'next',
         is_seed_week: 0,
         week_id: null,
-        tags: JSON.stringify(topic.tags)
+        tags: JSON.stringify(topic.tags || [])
       });
     }
 
@@ -114,10 +136,9 @@ export function seedDatabase(force = false) {
   });
 
   transaction();
-  console.log('[Database] Seed completed successfully!');
+  console.log('[Database] Seed completed successfully with in-app lessons!');
 }
 
-// Allow direct execution: node server/db/seed.js [--force]
 if (process.argv[1] && process.argv[1].endsWith('seed.js')) {
   const force = process.argv.includes('--force');
   seedDatabase(force);

@@ -1,33 +1,13 @@
 import crypto from 'crypto';
 import db from '../db/index.js';
-import { CURATED_KNOWLEDGE_VAULT, searchHackerNews } from './sources.js';
+import { IN_APP_LESSONS_VAULT, synthesizeInAppLesson } from './sources.js';
 
-/**
- * Hash a string (URL or normalized title) for deduplication.
- */
 function createHash(str) {
   return crypto.createHash('sha256').update(str.toLowerCase().trim()).digest('hex');
 }
 
-/**
- * Clean and normalize URLs to prevent subtle duplicates (e.g. tracking params, trailing slashes).
- */
-function normalizeUrl(rawUrl) {
-  try {
-    const parsed = new URL(rawUrl);
-    parsed.search = '';
-    parsed.hash = '';
-    return parsed.toString().replace(/\/$/, '');
-  } catch (e) {
-    return rawUrl.trim().replace(/\/$/, '');
-  }
-}
-
-/**
- * Priority limits: determines how many items to discover per topic based on priority.
- */
 const PRIORITY_LIMITS = {
-  high: 4,
+  high: 3,
   medium: 2,
   low: 1
 };
@@ -35,20 +15,18 @@ const PRIORITY_LIMITS = {
 export class CrawlerService {
   /**
    * Run the crawl engine for all currently active topics.
-   * Returns a detailed summary of discoveries and deduplications.
+   * Generates self-contained, in-app executive lessons without external links.
    */
   async runDailyCrawl() {
-    console.log('[CrawlerService] Starting daily topic crawl...');
+    console.log('[CrawlerService] Synthesizing daily in-app study lessons for active topics...');
     const startTime = Date.now();
 
-    // Mark status as running
     db.prepare(`
       INSERT OR REPLACE INTO app_settings (key, value)
       VALUES ('crawler_status', 'running')
     `).run();
 
     try {
-      // 1. Fetch active topics: status = 'now' OR linked to an uncompleted active week
       const activeTopics = db.prepare(`
         SELECT t.*, w.week_number 
         FROM topics t
@@ -64,19 +42,19 @@ export class CrawlerService {
       `).all();
 
       if (activeTopics.length === 0) {
-        console.log('[CrawlerService] No topics currently marked as "Now".');
+        console.log('[CrawlerService] No topics marked as "Now".');
         this.updateCrawlerStatus('idle', 0);
         return { success: true, count: 0, message: 'No active "Now" topics to crawl.' };
       }
 
-      console.log(`[CrawlerService] Found ${activeTopics.length} active topics to crawl.`);
-
-      const checkUrlExists = db.prepare('SELECT id FROM crawled_resources WHERE url_hash = ? OR url = ?');
+      const checkUrlExists = db.prepare('SELECT id FROM crawled_resources WHERE url_hash = ? OR title = ?');
       const insertResource = db.prepare(`
         INSERT INTO crawled_resources (
-          topic_id, topic_title, title, url, url_hash, domain, summary, status, found_at, read_time
+          topic_id, topic_title, title, domain, summary, skillset, skillset_priority,
+          content_body, key_takeaways, actionable_template, url, url_hash, status, found_at, read_time
         ) VALUES (
-          @topic_id, @topic_title, @title, @url, @url_hash, @domain, @summary, 'pending', CURRENT_TIMESTAMP, @read_time
+          @topic_id, @topic_title, @title, @domain, @summary, @skillset, @skillset_priority,
+          @content_body, @key_takeaways, @actionable_template, @url, @url_hash, 'pending', CURRENT_TIMESTAMP, @read_time
         )
       `);
 
@@ -88,18 +66,10 @@ export class CrawlerService {
         let topicNewCount = 0;
         const candidates = [];
 
-        // Step A: Search Hacker News / Technical feeds live
-        try {
-          const liveHits = await searchHackerNews(topic.title);
-          candidates.push(...liveHits);
-        } catch (e) {
-          console.warn(`[CrawlerService] Live search failed for ${topic.title}: ${e.message}`);
-        }
-
-        // Step B: Match against curated engineering vault
+        // Match against in-app lesson vault
         const queryTerms = topic.title.toLowerCase().split(/\s+/).filter(w => w.length > 2);
-        const vaultMatches = CURATED_KNOWLEDGE_VAULT.filter(item => {
-          const matchKeyword = item.keywords.some(k => 
+        const vaultMatches = IN_APP_LESSONS_VAULT.filter(item => {
+          const matchKeyword = item.keywords && item.keywords.some(k => 
             topic.title.toLowerCase().includes(k) || 
             (topic.description && topic.description.toLowerCase().includes(k))
           );
@@ -112,25 +82,41 @@ export class CrawlerService {
 
         candidates.push(...vaultMatches);
 
-        // Step C: Deduplicate candidates against database
+        // If candidates are fewer than targetCount, synthesize in-app deep dive module
+        if (candidates.length < targetCount) {
+          const synthesized = synthesizeInAppLesson(
+            topic.title, 
+            topic.description, 
+            topic.priority, 
+            topic.skillset || 'Technical Architecture'
+          );
+          candidates.push(synthesized);
+        }
+
+        // Deduplicate and insert
         for (const candidate of candidates) {
           if (topicNewCount >= targetCount) break;
 
-          const normUrl = normalizeUrl(candidate.url);
-          const hash = createHash(normUrl);
+          const internalSlug = `lesson-${createHash(candidate.title).substring(0, 12)}`;
+          const hash = createHash(candidate.title);
 
-          const existing = checkUrlExists.get(hash, normUrl);
+          const existing = checkUrlExists.get(hash, candidate.title);
           if (!existing) {
             try {
               insertResource.run({
                 topic_id: topic.id,
                 topic_title: topic.title,
                 title: candidate.title,
-                url: normUrl,
+                domain: candidate.domain || 'Internal Master Lesson',
+                summary: candidate.summary || `Executive in-app study briefing covering ${topic.title}.`,
+                skillset: candidate.skillset || topic.skillset || 'Program Management',
+                skillset_priority: candidate.skillset_priority || (topic.priority === 'high' ? 'P0 - Core TPM Discipline' : 'P1 - High-Value Differentiator'),
+                content_body: candidate.content_body,
+                key_takeaways: Array.isArray(candidate.key_takeaways) ? JSON.stringify(candidate.key_takeaways) : (candidate.key_takeaways || '[]'),
+                actionable_template: candidate.actionable_template || '',
+                url: internalSlug,
                 url_hash: hash,
-                domain: candidate.domain,
-                summary: candidate.summary || `Authoritative resource covering ${topic.title}.`,
-                read_time: candidate.readTime || '6 min read'
+                read_time: candidate.readTime || candidate.read_time || '7 min read'
               });
               topicNewCount++;
               totalNewFound++;
@@ -151,7 +137,7 @@ export class CrawlerService {
       const duration = Date.now() - startTime;
       this.updateCrawlerStatus('idle', totalNewFound);
 
-      console.log(`[CrawlerService] Daily crawl completed in ${duration}ms. ${totalNewFound} fresh resources added.`);
+      console.log(`[CrawlerService] In-app lesson synthesis completed in ${duration}ms. ${totalNewFound} lessons generated.`);
       return {
         success: true,
         count: totalNewFound,
@@ -159,7 +145,7 @@ export class CrawlerService {
         topicSummaries
       };
     } catch (err) {
-      console.error('[CrawlerService] Error during crawl:', err);
+      console.error('[CrawlerService] Error during lesson synthesis:', err);
       this.updateCrawlerStatus('error', 0);
       throw err;
     }
@@ -186,9 +172,6 @@ export class CrawlerService {
     update();
   }
 
-  /**
-   * Get current crawler configuration and run status.
-   */
   getStatus() {
     const statusRow = db.prepare("SELECT value FROM app_settings WHERE key = 'crawler_status'").get();
     const lastRunRow = db.prepare("SELECT value FROM app_settings WHERE key = 'crawler_last_run'").get();
