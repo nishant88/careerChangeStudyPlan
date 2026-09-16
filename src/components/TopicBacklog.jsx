@@ -5,14 +5,18 @@ import {
   Sparkles, 
   Radio, 
   Clock, 
-  Layers
+  Layers,
+  Video
 } from 'lucide-react';
 
 export default function TopicBacklog({ 
-  groupedTopics = { now: [], next: [], someday: [] }, 
+  groupedTopics = { now: [], next: [], someday: [] },
+  digest = [],
+  libraryItems = [],
   onMoveTopic, 
   onDeleteTopic, 
-  onOpenAddModal 
+  onOpenAddModal,
+  onOpenReader
 }) {
   const columns = [
     {
@@ -101,6 +105,27 @@ export default function TopicBacklog({
                             <span>{topic.skillset || 'Technical Architecture'}</span>
                           </span>
 
+                          {(() => {
+                            const match = (libraryItems || []).find(r => r.topic_id === topic.id || r.topic_title === topic.title) ||
+                                          (digest || []).find(d => d.topic_id === topic.id || d.topic_title === topic.title);
+                            let videoCount = 0;
+                            if (match && match.youtube_videos) {
+                              try {
+                                const parsed = Array.isArray(match.youtube_videos) ? match.youtube_videos : JSON.parse(match.youtube_videos);
+                                videoCount = parsed.length;
+                              } catch(e) {}
+                            }
+                            if (videoCount > 0) {
+                              return (
+                                <span className="skillset-badge" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--accent-primary)', borderColor: 'var(--accent-primary)', fontSize: '0.675rem', padding: '2px 7px' }}>
+                                  <Video size={10} />
+                                  <span>{videoCount} Video{videoCount > 1 ? 's' : ''} Included</span>
+                                </span>
+                              );
+                            }
+                            return null;
+                          })()}
+
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <span className={`priority-badge priority-${topic.priority}`}>
                               {topic.priority}
@@ -116,7 +141,14 @@ export default function TopicBacklog({
                           </div>
                         </div>
 
-                        <h4 className="kanban-card-title">{topic.title}</h4>
+                        <h4 
+                          className={`kanban-card-title ${onOpenReader ? 'clickable-title' : ''}`}
+                          onClick={() => onOpenReader && onOpenReader(topic)}
+                          title={onOpenReader ? "Click to open in-app study lesson" : undefined}
+                          style={{ cursor: onOpenReader ? 'pointer' : 'default' }}
+                        >
+                          {topic.title}
+                        </h4>
 
                         {topic.description && (
                           <p className="kanban-card-desc">{topic.description}</p>

@@ -11,7 +11,7 @@ import {
   Video
 } from 'lucide-react';
 
-export default function ResourceLibrary({ 
+export default function CrawledBacklog({ 
   items = [], 
   availableTopics = [], 
   availableSkillsets = [], 
@@ -69,9 +69,9 @@ export default function ResourceLibrary({
     <div>
       <div className="section-header">
         <div>
-          <h2 className="section-title">Saved Knowledge & Lesson Library</h2>
+          <h2 className="section-title">Crawled Items Backlog</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '4px' }}>
-            Your permanent in-app repository of master lessons, architectural blueprints, and copyable workplace artifacts.
+            The permanent, complete historical archive of all synthesized topics and video masterclasses. Never deleted.
           </p>
         </div>
       </div>
@@ -115,30 +115,6 @@ export default function ResourceLibrary({
             ))}
           </select>
 
-          {/* Status Tabs */}
-          <div className="nav-tabs" style={{ padding: '2px' }}>
-            <button 
-              className={`nav-tab-btn ${selectedStatus === 'all' ? 'active' : ''}`}
-              style={{ padding: '5px 12px', fontSize: '0.8rem' }}
-              onClick={() => handleStatusChange('all')}
-            >
-              All
-            </button>
-            <button 
-              className={`nav-tab-btn ${selectedStatus === 'saved' ? 'active' : ''}`}
-              style={{ padding: '5px 12px', fontSize: '0.8rem' }}
-              onClick={() => handleStatusChange('saved')}
-            >
-              Unread
-            </button>
-            <button 
-              className={`nav-tab-btn ${selectedStatus === 'read' ? 'active' : ''}`}
-              style={{ padding: '5px 12px', fontSize: '0.8rem' }}
-              onClick={() => handleStatusChange('read')}
-            >
-              Read
-            </button>
-          </div>
         </div>
       </div>
 
@@ -146,8 +122,8 @@ export default function ResourceLibrary({
       {items.length === 0 ? (
         <div className="glass-panel empty-digest" style={{ padding: '48px 24px' }}>
           <Bookmark className="empty-digest-icon" style={{ color: 'var(--text-muted)' }} />
-          <h4>No Saved Lessons Found</h4>
-          <p>When you click "Save for Later" on morning topic briefs, they appear here in your permanent in-app knowledge library.</p>
+          <h4>No Crawled Items Yet</h4>
+          <p>When the engine synthesizes topics from your backlog, they will appear here permanently.</p>
         </div>
       ) : (
         <div className="library-grid">
@@ -281,14 +257,6 @@ export default function ResourceLibrary({
                     <span>{item.personal_notes ? 'Notes' : '+ Notes'}</span>
                   </button>
                 </div>
-
-                <button 
-                  className="btn-action btn-action-dismiss" 
-                  onClick={() => onRemoveItem(item.id)}
-                  title="Remove from library"
-                >
-                  <Trash2 size={13} />
-                </button>
               </div>
             </div>
           ))}
