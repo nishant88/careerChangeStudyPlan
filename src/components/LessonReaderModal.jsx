@@ -31,10 +31,31 @@ export default function LessonReaderModal({
 }) {
   const [activeTab, setActiveTab] = useState('lesson'); // 'lesson' | 'template' | 'takeaways' | 'notes'
   const [copied, setCopied] = useState(false);
-  const [personalNotes, setPersonalNotes] = useState(lesson?.personal_notes || '');
+  const [personalNotes, setPersonalNotes] = useState('');
   const [notesSaved, setNotesSaved] = useState(false);
 
-  // Compute word count and estimated read time
+  // Sync state whenever lesson changes
+  useEffect(() => {
+    if (lesson) {
+      setPersonalNotes(lesson.personal_notes || '');
+      setActiveTab('lesson');
+      setCopied(false);
+      setNotesSaved(false);
+    }
+  }, [lesson?.id]);
+
+  // Handle Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  // Compute word count and estimated read time unconditionally
   const stats = useMemo(() => {
     if (!lesson?.content_body) return { words: 0, minutes: 5 };
     const wordCount = lesson.content_body.trim().split(/\s+/).length;
@@ -42,16 +63,30 @@ export default function LessonReaderModal({
     return { words: wordCount, minutes };
   }, [lesson?.content_body]);
 
-  if (!isOpen || !lesson) return null;
+  // Render markdown safely using marked unconditionally
+  const renderedContentHtml = useMemo(() => {
+    if (!lesson?.content_body) return '';
+    try {
+      return marked.parse(lesson.content_body);
+    } catch (e) {
+      return lesson.content_body;
+    }
+  }, [lesson?.content_body]);
 
-  let takeaways = [];
-  try {
-    takeaways = Array.isArray(lesson.key_takeaways) 
-      ? lesson.key_takeaways 
-      : (lesson.key_takeaways ? JSON.parse(lesson.key_takeaways) : []);
-  } catch (e) {
-    takeaways = lesson.key_takeaways ? [lesson.key_takeaways] : [];
-  }
+  // Parse takeaways safely
+  const takeaways = useMemo(() => {
+    if (!lesson?.key_takeaways) return [];
+    try {
+      return Array.isArray(lesson.key_takeaways) 
+        ? lesson.key_takeaways 
+        : JSON.parse(lesson.key_takeaways);
+    } catch (e) {
+      return [lesson.key_takeaways];
+    }
+  }, [lesson?.key_takeaways]);
+
+  // Early return ONLY AFTER all hooks are registered!
+  if (!isOpen || !lesson) return null;
 
   const handleCopyTemplate = () => {
     if (!lesson.actionable_template) return;
@@ -67,16 +102,6 @@ export default function LessonReaderModal({
       setTimeout(() => setNotesSaved(false), 2000);
     }
   };
-
-  // Render markdown safely using marked
-  const renderedContentHtml = useMemo(() => {
-    if (!lesson?.content_body) return '';
-    try {
-      return marked.parse(lesson.content_body);
-    } catch (e) {
-      return lesson.content_body;
-    }
-  }, [lesson?.content_body]);
 
   return (
     <div className="modal-overlay reader-overlay" onClick={onClose}>

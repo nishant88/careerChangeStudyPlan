@@ -12,7 +12,8 @@ export default function TopicBacklog({
   groupedTopics = { now: [], next: [], someday: [] }, 
   onMoveTopic, 
   onDeleteTopic, 
-  onOpenAddModal 
+  onOpenAddModal,
+  onOpenReader
 }) {
   const columns = [
     {
@@ -116,7 +117,14 @@ export default function TopicBacklog({
                           </div>
                         </div>
 
-                        <h4 className="kanban-card-title">{topic.title}</h4>
+                        <h4 
+                          className={`kanban-card-title ${onOpenReader ? 'clickable-title' : ''}`}
+                          onClick={() => onOpenReader && onOpenReader(topic)}
+                          title={onOpenReader ? "Click to open in-app study lesson" : undefined}
+                          style={{ cursor: onOpenReader ? 'pointer' : 'default' }}
+                        >
+                          {topic.title}
+                        </h4>
 
                         {topic.description && (
                           <p className="kanban-card-desc">{topic.description}</p>

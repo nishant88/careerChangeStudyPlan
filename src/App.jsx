@@ -96,17 +96,32 @@ export default function App() {
   const handleOpenReader = (item) => {
     if (!item) return;
 
-    // Normalizing between crawled_resources, seed_resources, and weeks
+    let contentBody = item.content_body;
+    let template = item.actionable_template;
+    let takeaways = item.key_takeaways;
+
+    // If item is a backlog topic without content_body, try to find matching crawled resource
+    if (!contentBody) {
+      const match = libraryData.items?.find(r => r.topic_id === item.id || r.topic_title === item.title) ||
+                    digest.find(d => d.topic_id === item.id || d.topic_title === item.title);
+      if (match) {
+        contentBody = match.content_body;
+        template = match.actionable_template;
+        takeaways = match.key_takeaways;
+      }
+    }
+
+    // Normalizing between crawled_resources, seed_resources, weeks, and backlog topics
     const normalizedLesson = {
       id: item.id,
       title: item.title,
-      summary: item.summary || item.learning_goal,
-      content_body: item.content_body,
-      key_takeaways: item.key_takeaways,
-      actionable_template: item.actionable_template,
+      summary: item.summary || item.learning_goal || item.description || '',
+      content_body: contentBody || '',
+      key_takeaways: takeaways || [],
+      actionable_template: template || '',
       skillset: item.skillset || 'Program Management',
-      skillset_priority: item.skillset_priority || 'P0 - Core TPM Discipline',
-      read_time: item.read_time || '8 min read',
+      skillset_priority: item.skillset_priority || (item.priority === 'high' ? 'P0 - Core TPM Discipline' : 'P1 - High-Value Differentiator'),
+      read_time: item.read_time || '10 min read',
       personal_notes: item.personal_notes || item.notes || '',
       status: item.status || (item.completed ? 'read' : 'pending'),
       isWeek: Boolean(item.week_number)
@@ -357,6 +372,7 @@ export default function App() {
             onMoveTopic={handleMoveTopic}
             onDeleteTopic={handleDeleteTopic}
             onOpenAddModal={() => setIsAddTopicOpen(true)}
+            onOpenReader={handleOpenReader}
           />
         )}
 
