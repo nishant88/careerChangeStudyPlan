@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   X, 
   Bookmark, 
@@ -10,9 +10,16 @@ import {
   Lightbulb, 
   Edit3, 
   Clock, 
-  Award,
-  Layers
+  Layers,
+  FileCheck
 } from 'lucide-react';
+import { marked } from 'marked';
+
+// Configure marked for GitHub Flavored Markdown (tables, code blocks, lists)
+marked.setOptions({
+  gfm: true,
+  breaks: true
+});
 
 export default function LessonReaderModal({ 
   lesson, 
@@ -26,6 +33,14 @@ export default function LessonReaderModal({
   const [copied, setCopied] = useState(false);
   const [personalNotes, setPersonalNotes] = useState(lesson?.personal_notes || '');
   const [notesSaved, setNotesSaved] = useState(false);
+
+  // Compute word count and estimated read time
+  const stats = useMemo(() => {
+    if (!lesson?.content_body) return { words: 0, minutes: 5 };
+    const wordCount = lesson.content_body.trim().split(/\s+/).length;
+    const minutes = Math.max(3, Math.ceil(wordCount / 200));
+    return { words: wordCount, minutes };
+  }, [lesson?.content_body]);
 
   if (!isOpen || !lesson) return null;
 
@@ -53,6 +68,16 @@ export default function LessonReaderModal({
     }
   };
 
+  // Render markdown safely using marked
+  const renderedContentHtml = useMemo(() => {
+    if (!lesson?.content_body) return '';
+    try {
+      return marked.parse(lesson.content_body);
+    } catch (e) {
+      return lesson.content_body;
+    }
+  }, [lesson?.content_body]);
+
   return (
     <div className="modal-overlay reader-overlay" onClick={onClose}>
       <div className="reader-modal-container" onClick={(e) => e.stopPropagation()}>
@@ -70,9 +95,9 @@ export default function LessonReaderModal({
               </span>
             )}
 
-            <span className="reader-readtime">
+            <span className="reader-readtime" title="Comprehensive detailed guide">
               <Clock size={13} />
-              <span>{lesson.read_time || '8 min read'}</span>
+              <span>{stats.minutes} min read ({stats.words} words)</span>
             </span>
           </div>
 
@@ -122,7 +147,7 @@ export default function LessonReaderModal({
             onClick={() => setActiveTab('lesson')}
           >
             <BookOpen size={16} />
-            <span>Study Lesson & Deep Dive</span>
+            <span>Exhaustive Study Lesson ({stats.words} words)</span>
           </button>
 
           {lesson.actionable_template && (
@@ -156,13 +181,14 @@ export default function LessonReaderModal({
 
         {/* Reader Body Content */}
         <div className="reader-body-scroll">
-          {/* TAB 1: MAIN LESSON */}
+          {/* TAB 1: MAIN DETAILED LESSON */}
           {activeTab === 'lesson' && (
             <div className="reader-content-markdown">
               {lesson.content_body ? (
-                <div dangerouslySetInnerHTML={{ 
-                  __html: formatMarkdownToHtml(lesson.content_body) 
-                }} />
+                <div 
+                  className="markdown-body" 
+                  dangerouslySetInnerHTML={{ __html: renderedContentHtml }} 
+                />
               ) : (
                 <p style={{ color: 'var(--text-secondary)' }}>No extended lesson content available for this topic.</p>
               )}
@@ -244,20 +270,4 @@ export default function LessonReaderModal({
       </div>
     </div>
   );
-}
-
-// Simple Markdown to HTML formatter for rich in-app rendering
-function formatMarkdownToHtml(md) {
-  if (!md) return '';
-  return md
-    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-    .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/gim, '<em>$1</em>')
-    .replace(/```([\s\S]*?)```/gim, '<pre><code>$1</code></pre>')
-    .replace(/`([^`]+)`/gim, '<code>$1</code>')
-    .replace(/^- (.*$)/gim, '<li>$1</li>')
-    .replace(/\n\n/gim, '<p></p>')
-    .replace(/\n/gim, '<br />');
 }
