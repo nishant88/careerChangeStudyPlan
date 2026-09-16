@@ -1,10 +1,13 @@
 import crypto from 'crypto';
 import db from '../db/index.js';
 import { IN_APP_LESSONS_VAULT, synthesizeInAppLesson } from './sources.js';
+import ytSearch from 'yt-search';
 
 function createHash(str) {
   return crypto.createHash('sha256').update(str.toLowerCase().trim()).digest('hex');
 }
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const PRIORITY_LIMITS = {
   high: 3,
@@ -51,11 +54,23 @@ export class CrawlerService {
       const insertResource = db.prepare(`
         INSERT INTO crawled_resources (
           topic_id, topic_title, title, domain, summary, skillset, skillset_priority,
-          content_body, key_takeaways, actionable_template, url, url_hash, status, found_at, read_time
+          content_body, key_takeaways, actionable_template, youtube_videos, url, url_hash, status, found_at, read_time
         ) VALUES (
           @topic_id, @topic_title, @title, @domain, @summary, @skillset, @skillset_priority,
-          @content_body, @key_takeaways, @actionable_template, @url, @url_hash, 'pending', CURRENT_TIMESTAMP, @read_time
+          @content_body, @key_takeaways, @actionable_template, @youtube_videos, @url, @url_hash, 'pending', CURRENT_TIMESTAMP, @read_time
         )
+      `);
+
+      // Ensure Phase 4 exists for Continuous Topic Exploration
+      let phase4 = db.prepare("SELECT id FROM phases WHERE phase_number = 4").get();
+      if (!phase4) {
+        db.prepare("INSERT INTO phases (phase_number, title, description) VALUES (4, 'Phase 4: Continuous Topic Exploration', 'Dynamically generated deep-dives from your active backlog crawler.')").run();
+        phase4 = db.prepare("SELECT id FROM phases WHERE phase_number = 4").get();
+      }
+
+      const insertWeek = db.prepare(`
+        INSERT INTO weeks (week_number, phase_id, title, learning_goal, action_item, skillset, skillset_priority, content_body, key_takeaways, actionable_template, youtube_videos, display_order)
+        VALUES (@week_number, @phase_id, @title, @learning_goal, @action_item, @skillset, @skillset_priority, @content_body, @key_takeaways, @actionable_template, @youtube_videos, @display_order)
       `);
 
       let totalNewFound = 0;
@@ -84,7 +99,7 @@ export class CrawlerService {
 
         // If candidates are fewer than targetCount, synthesize in-app deep dive module
         if (candidates.length < targetCount) {
-          const synthesized = synthesizeInAppLesson(
+          const synthesized = await synthesizeInAppLesson(
             topic.title, 
             topic.description, 
             topic.priority, 
@@ -102,6 +117,49 @@ export class CrawlerService {
 
           const existing = checkUrlExists.get(hash, candidate.title);
           if (!existing) {
+            
+            // --- ALWAYS FETCH VIDEOS IF NOT PRESENT ---
+            if (!candidate.youtube_videos || candidate.youtube_videos.length === 0) {
+              candidate.youtube_videos = [];
+              try {
+                const queryMasterclass = `${candidate.title} ${topic.skillset || ''} masterclass full course`;
+                const queryGeneral = `${candidate.title} ${topic.skillset || ''} detailed explanation`;
+                
+                await sleep(1500); // Prevent rate limiting
+                const r1 = await ytSearch(queryMasterclass);
+                await sleep(1500);
+                const r2 = await ytSearch(queryGeneral);
+                
+                // Combine and filter for videos >= 30 minutes (1800 seconds)
+                const allVideos = [...r1.videos, ...r2.videos]
+                  .filter(v => v.seconds >= 1800)
+                  .sort((a, b) => b.seconds - a.seconds); // Longest first
+                  
+                // Deduplicate by URL
+                const uniqueVideos = [];
+                const seenUrls = new Set();
+                for (const v of allVideos) {
+                  if (!seenUrls.has(v.url)) {
+                    seenUrls.add(v.url);
+                    uniqueVideos.push(v);
+                  }
+                }
+                
+                const topVideos = uniqueVideos.slice(0, 4); // Keep up to 4 informative videos
+                
+                topVideos.forEach(v => {
+                  candidate.youtube_videos.push({
+                    title: v.title,
+                    url: v.url,
+                    embedUrl: v.url.replace('watch?v=', 'embed/'),
+                    duration: v.timestamp
+                  });
+                });
+              } catch (err) {
+                console.error('[CrawlerService] Error fetching missing YouTube videos:', err);
+              }
+            }
+
             try {
               insertResource.run({
                 topic_id: topic.id,
@@ -114,10 +172,32 @@ export class CrawlerService {
                 content_body: candidate.content_body,
                 key_takeaways: Array.isArray(candidate.key_takeaways) ? JSON.stringify(candidate.key_takeaways) : (candidate.key_takeaways || '[]'),
                 actionable_template: candidate.actionable_template || '',
+                youtube_videos: candidate.youtube_videos ? JSON.stringify(candidate.youtube_videos) : '[]',
                 url: internalSlug,
                 url_hash: hash,
                 read_time: candidate.readTime || candidate.read_time || '7 min read'
               });
+
+              // Add to 12-Week Curriculum as a new Week
+              const maxWeek = db.prepare('SELECT MAX(week_number) as maxW, MAX(display_order) as maxOrder FROM weeks').get();
+              const nextWeekNum = (maxWeek.maxW || 0) + 1;
+              const nextOrder = (maxWeek.maxOrder || 0) + 1;
+
+              insertWeek.run({
+                week_number: nextWeekNum,
+                phase_id: phase4.id,
+                title: candidate.title,
+                learning_goal: candidate.summary || `Executive in-app study briefing covering ${topic.title}.`,
+                action_item: 'Review the actionable template and apply it to your current engineering challenges.',
+                skillset: candidate.skillset || topic.skillset || 'Program Management',
+                skillset_priority: candidate.skillset_priority || (topic.priority === 'high' ? 'P0 - Core TPM Discipline' : 'P1 - High-Value Differentiator'),
+                content_body: candidate.content_body,
+                key_takeaways: Array.isArray(candidate.key_takeaways) ? JSON.stringify(candidate.key_takeaways) : (candidate.key_takeaways || '[]'),
+                actionable_template: candidate.actionable_template || '',
+                youtube_videos: candidate.youtube_videos ? JSON.stringify(candidate.youtube_videos) : '[]',
+                display_order: nextOrder
+              });
+
               topicNewCount++;
               totalNewFound++;
             } catch (err) {

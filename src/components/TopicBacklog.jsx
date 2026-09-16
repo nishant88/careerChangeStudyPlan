@@ -5,11 +5,14 @@ import {
   Sparkles, 
   Radio, 
   Clock, 
-  Layers
+  Layers,
+  Video
 } from 'lucide-react';
 
 export default function TopicBacklog({ 
-  groupedTopics = { now: [], next: [], someday: [] }, 
+  groupedTopics = { now: [], next: [], someday: [] },
+  digest = [],
+  libraryItems = [],
   onMoveTopic, 
   onDeleteTopic, 
   onOpenAddModal,
@@ -101,6 +104,27 @@ export default function TopicBacklog({
                             <Layers size={10} />
                             <span>{topic.skillset || 'Technical Architecture'}</span>
                           </span>
+
+                          {(() => {
+                            const match = (libraryItems || []).find(r => r.topic_id === topic.id || r.topic_title === topic.title) ||
+                                          (digest || []).find(d => d.topic_id === topic.id || d.topic_title === topic.title);
+                            let videoCount = 0;
+                            if (match && match.youtube_videos) {
+                              try {
+                                const parsed = Array.isArray(match.youtube_videos) ? match.youtube_videos : JSON.parse(match.youtube_videos);
+                                videoCount = parsed.length;
+                              } catch(e) {}
+                            }
+                            if (videoCount > 0) {
+                              return (
+                                <span className="skillset-badge" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--accent-primary)', borderColor: 'var(--accent-primary)', fontSize: '0.675rem', padding: '2px 7px' }}>
+                                  <Video size={10} />
+                                  <span>{videoCount} Video{videoCount > 1 ? 's' : ''} Included</span>
+                                </span>
+                              );
+                            }
+                            return null;
+                          })()}
 
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <span className={`priority-badge priority-${topic.priority}`}>

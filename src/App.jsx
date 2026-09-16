@@ -7,7 +7,8 @@ import ResourceLibrary from './components/ResourceLibrary';
 import AddTopicModal from './components/AddTopicModal';
 import AddWeekModal from './components/AddWeekModal';
 import SettingsModal from './components/SettingsModal';
-import LessonReaderModal from './components/LessonReaderModal';
+import LessonReaderPage from './components/LessonReaderPage';
+import CrawledBacklog from './components/CrawledBacklog';
 
 import {
   fetchStats,
@@ -32,7 +33,7 @@ import {
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState('dashboard');
-  const [theme, setTheme] = useState('dark');
+  const [theme, setTheme] = useState('paperwhite');
 
   // App State
   const [stats, setStats] = useState(null);
@@ -40,6 +41,7 @@ export default function App() {
   const [phases, setPhases] = useState([]);
   const [groupedTopics, setGroupedTopics] = useState({ now: [], next: [], someday: [] });
   const [libraryData, setLibraryData] = useState({ items: [], availableTopics: [], availableSkillsets: [] });
+  const [crawledBacklogData, setCrawledBacklogData] = useState({ items: [], availableTopics: [], availableSkillsets: [] });
 
   // Reader Modal State
   const [selectedLesson, setSelectedLesson] = useState(null);
@@ -58,7 +60,11 @@ export default function App() {
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
+    setTheme(prev => {
+      if (prev === 'dark') return 'light';
+      if (prev === 'light') return 'paperwhite';
+      return 'dark';
+    });
   };
 
   const showToast = (msg) => {
@@ -69,12 +75,13 @@ export default function App() {
   // Load all initial data
   const loadAllData = async () => {
     try {
-      const [statsRes, digestRes, planRes, topicsRes, libRes] = await Promise.all([
+      const [statsRes, digestRes, planRes, topicsRes, libRes, crawledRes] = await Promise.all([
         fetchStats(),
         fetchDigest(),
         fetchPlan(),
         fetchTopics(),
-        fetchLibrary()
+        fetchLibrary(),
+        fetchLibrary({ status: 'all' })
       ]);
 
       setStats(statsRes);
@@ -82,6 +89,7 @@ export default function App() {
       setPhases(planRes.phases || []);
       setGroupedTopics(topicsRes.grouped || { now: [], next: [], someday: [] });
       setLibraryData(libRes);
+      setCrawledBacklogData(crawledRes);
     } catch (err) {
       console.error('Error loading data:', err);
       showToast('Error connecting to local server');
@@ -99,6 +107,7 @@ export default function App() {
     let contentBody = item.content_body;
     let template = item.actionable_template;
     let takeaways = item.key_takeaways;
+    let youtubeVideos = item.youtube_videos;
 
     // If item is a backlog topic without content_body, try to find matching crawled resource
     if (!contentBody) {
@@ -108,6 +117,7 @@ export default function App() {
         contentBody = match.content_body;
         template = match.actionable_template;
         takeaways = match.key_takeaways;
+        youtubeVideos = match.youtube_videos;
       }
     }
 
@@ -119,6 +129,7 @@ export default function App() {
       content_body: contentBody || '',
       key_takeaways: takeaways || [],
       actionable_template: template || '',
+      youtube_videos: youtubeVideos || '[]',
       skillset: item.skillset || 'Program Management',
       skillset_priority: item.skillset_priority || (item.priority === 'high' ? 'P0 - Core TPM Discipline' : 'P1 - High-Value Differentiator'),
       read_time: item.read_time || '10 min read',
@@ -129,6 +140,9 @@ export default function App() {
 
     setSelectedLesson(normalizedLesson);
     setIsReaderOpen(true);
+    if (theme !== 'paperwhite') {
+      setTheme('paperwhite');
+    }
   };
 
   // --- CRAWLER TRIGGER ---
@@ -287,6 +301,15 @@ export default function App() {
     }
   };
 
+  const handleFilterCrawledBacklog = async (filters) => {
+    try {
+      const data = await fetchLibrary({ ...filters, status: 'all' });
+      setCrawledBacklogData(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleUpdateLibraryNotes = async (id, notes) => {
     try {
       await updateLibraryNotes(id, notes);
@@ -320,6 +343,33 @@ export default function App() {
       console.error(err);
     }
   };
+
+  if (isReaderOpen && selectedLesson) {
+    return (
+      <LessonReaderPage 
+        lesson={selectedLesson}
+        onBack={() => setIsReaderOpen(false)}
+        onSave={!selectedLesson.isWeek ? (id) => handleSaveDigest(id) : null}
+        onMarkRead={(id) => {
+          if (selectedLesson.isWeek) {
+            handleToggleWeekComplete(id, true);
+          } else {
+            handleReadDigest(id);
+          }
+          setIsReaderOpen(false);
+        }}
+        onSaveNotes={(id, notes) => {
+          if (selectedLesson.isWeek) {
+            handleUpdateWeekNotes(id, notes);
+          } else {
+            handleUpdateLibraryNotes(id, notes);
+          }
+        }}
+        theme={theme}
+        toggleTheme={toggleTheme}
+      />
+    );
+  }
 
   return (
     <div>
@@ -369,6 +419,8 @@ export default function App() {
         {currentTab === 'backlog' && (
           <TopicBacklog 
             groupedTopics={groupedTopics}
+            digest={digest}
+            libraryItems={libraryData.items}
             onMoveTopic={handleMoveTopic}
             onDeleteTopic={handleDeleteTopic}
             onOpenAddModal={() => setIsAddTopicOpen(true)}
@@ -388,30 +440,28 @@ export default function App() {
             onOpenReader={handleOpenReader}
           />
         )}
-      </main>
 
-      {/* Dedicated In-App Lesson Reader */}
-      <LessonReaderModal 
-        isOpen={isReaderOpen}
-        lesson={selectedLesson}
-        onClose={() => setIsReaderOpen(false)}
-        onSave={selectedLesson && !selectedLesson.isWeek ? (id) => handleSaveDigest(id) : null}
-        onMarkRead={selectedLesson ? (id) => {
-          if (selectedLesson.isWeek) {
-            handleToggleWeekComplete(id, true);
-          } else {
-            handleReadDigest(id);
-          }
-          setIsReaderOpen(false);
-        } : null}
-        onSaveNotes={(id, notes) => {
-          if (selectedLesson?.isWeek) {
-            handleUpdateWeekNotes(id, notes);
-          } else {
-            handleUpdateLibraryNotes(id, notes);
-          }
-        }}
-      />
+        {currentTab === 'crawled_backlog' && (
+          <CrawledBacklog 
+            items={crawledBacklogData.items || []}
+            availableTopics={crawledBacklogData.availableTopics || []}
+            availableSkillsets={crawledBacklogData.availableSkillsets || []}
+            onFilterChange={handleFilterCrawledBacklog}
+            onUpdateNotes={(id, notes) => {
+              // Share library update logic since it hits the same DB table
+              handleUpdateLibraryNotes(id, notes).then(() => {
+                fetchLibrary({ status: 'all' }).then(setCrawledBacklogData);
+              });
+            }}
+            onToggleRead={(id) => {
+              handleToggleLibraryRead(id).then(() => {
+                fetchLibrary({ status: 'all' }).then(setCrawledBacklogData);
+              });
+            }}
+            onOpenReader={handleOpenReader}
+          />
+        )}
+      </main>
 
       {/* Modals */}
       <AddTopicModal 

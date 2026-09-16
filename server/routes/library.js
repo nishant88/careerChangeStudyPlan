@@ -12,13 +12,18 @@ router.get('/', (req, res) => {
       SELECT cr.*, t.tags
       FROM crawled_resources cr
       LEFT JOIN topics t ON cr.topic_id = t.id
-      WHERE cr.status IN ('saved', 'read')
+      WHERE 1=1
     `;
     const params = [];
 
-    if (status === 'saved' || status === 'read') {
+    if (status === 'all') {
+      // Fetch all items, no status filter needed
+    } else if (status === 'saved' || status === 'read') {
       query += ' AND cr.status = ?';
       params.push(status);
+    } else {
+      // Default to saved and read for the normal library tab
+      query += " AND cr.status IN ('saved', 'read')";
     }
 
     if (skillset) {
@@ -50,8 +55,16 @@ router.get('/', (req, res) => {
 
     const items = db.prepare(query).all(...params);
 
-    const topics = db.prepare("SELECT DISTINCT topic_title FROM crawled_resources WHERE status IN ('saved', 'read')").all().map(r => r.topic_title);
-    const skillsets = db.prepare("SELECT DISTINCT skillset FROM crawled_resources WHERE status IN ('saved', 'read')").all().map(r => r.skillset).filter(Boolean);
+    let topicFilterQuery = "SELECT DISTINCT topic_title FROM crawled_resources WHERE status IN ('saved', 'read')";
+    let skillsetFilterQuery = "SELECT DISTINCT skillset FROM crawled_resources WHERE status IN ('saved', 'read')";
+    
+    if (status === 'all') {
+      topicFilterQuery = "SELECT DISTINCT topic_title FROM crawled_resources";
+      skillsetFilterQuery = "SELECT DISTINCT skillset FROM crawled_resources";
+    }
+
+    const topics = db.prepare(topicFilterQuery).all().map(r => r.topic_title).filter(Boolean);
+    const skillsets = db.prepare(skillsetFilterQuery).all().map(r => r.skillset).filter(Boolean);
 
     res.json({
       items,

@@ -19,7 +19,8 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "marked": "^18.0.13",
-    "node-cron": "^3.0.3"
+    "node-cron": "^3.0.3",
+    "yt-search": "^2.13.1"
   },
   "devDependencies": {
     "@types/react": "^18.3.18",

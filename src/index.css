@@ -78,6 +78,28 @@
   --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.15);
 }
 
+[data-theme='paperwhite'] {
+  --bg-primary: #f2efe9;       /* Unbleached paper warm tone */
+  --bg-secondary: #e6e2d8;
+  --bg-card: rgba(245, 243, 237, 0.9);
+  --bg-card-hover: #ffffff;
+  --bg-card-solid: #ffffff;
+  --bg-input: #e6e2d8;
+  --bg-overlay: rgba(20, 20, 20, 0.7);
+
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-hover: rgba(50, 50, 50, 0.3);
+
+  --text-primary: #2d2d2d;     /* Charcoal */
+  --text-secondary: #555555;
+  --text-muted: #888888;
+
+  --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 15px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 8px 25px rgba(0, 0, 0, 0.08);
+  --shadow-glow: none;
+}
+
 /* CSS Reset & Base */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -166,7 +188,7 @@ button, input, select, textarea {
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border-bottom: 1px solid var(--border-subtle);
-  margin-bottom: 28px;
+  margin-bottom: 0;
 }
 
 [data-theme='light'] .app-header {
@@ -227,6 +249,15 @@ button, input, select, textarea {
   background: rgba(99, 102, 241, 0.15);
   color: var(--accent-primary);
   border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.secondary-nav-container {
+  display: flex;
+  justify-content: center;
+  padding: 16px 24px;
+  margin-bottom: 28px;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .nav-tabs {
@@ -1496,3 +1527,151 @@ button, input, select, textarea {
   }
 }
 
+/* ==========================================================================
+   Full Page Reader (Paperwhite Experience)
+   ========================================================================== */
+.reader-page-wrapper {
+  min-height: 100vh;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+.reader-page-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.reader-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.reader-content-layout {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 24px 80px 24px;
+  width: 100%;
+}
+
+.reader-title-section {
+  margin-bottom: 32px;
+}
+
+.reader-title {
+  font-family: 'Merriweather', serif;
+  font-size: 2.2rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.reader-meta-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.reader-body-content {
+  font-family: 'Literata', serif;
+  font-size: 1.15rem;
+  line-height: 1.8;
+  color: var(--text-primary);
+  margin-top: 32px;
+}
+
+.reader-body-content h1, 
+.reader-body-content h2, 
+.reader-body-content h3,
+.reader-body-content h4 {
+  font-family: 'Inter', sans-serif;
+  color: var(--text-primary);
+  margin-top: 2em;
+  margin-bottom: 1em;
+}
+
+.reader-body-content h2 {
+  font-size: 1.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 8px;
+}
+
+.reader-body-content p {
+  margin-bottom: 1.5em;
+}
+
+.reader-body-content blockquote {
+  border-left: 4px solid var(--border-hover);
+  padding-left: 16px;
+  font-style: italic;
+  color: var(--text-secondary);
+  margin: 1.5em 0;
+}
+
+.reader-body-content ul,
+.reader-body-content ol {
+  margin-bottom: 1.5em;
+  padding-left: 1.5em;
+}
+
+.reader-body-content li {
+  margin-bottom: 0.5em;
+}
+
+.reader-body-content code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9em;
+  background: var(--bg-secondary);
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+}
+
+.reader-body-content pre {
+  background: var(--bg-secondary);
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin-bottom: 1.5em;
+}
+
+.reader-body-content pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.reader-notes-section {
+  margin-top: 48px;
+  padding-top: 32px;
+  border-top: 2px dashed var(--border-subtle);
+}
+
+.reader-notes-textarea {
+  width: 100%;
+  min-height: 120px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  resize: vertical;
+  margin-bottom: 16px;
+}
+
+.reader-notes-textarea:focus {
+  border-color: var(--accent-primary);
+  outline: none;
+}

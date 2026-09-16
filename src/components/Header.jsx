@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { 
   Compass, 
   BookOpen, 
-  Kanban, 
+  Kanban,
+  History,
   Bookmark, 
   Flame, 
   RefreshCw, 
@@ -34,8 +35,9 @@ export default function Header({
   };
 
   return (
-    <header className="app-header">
-      <div className="header-inner">
+    <>
+      <header className="app-header">
+        <div className="header-inner">
         {/* Brand */}
         <div className="brand-section" onClick={() => setCurrentTab('dashboard')}>
           <div className="brand-logo-icon">
@@ -48,58 +50,6 @@ export default function Header({
             </div>
           </div>
         </div>
-
-        {/* Navigation Tabs */}
-        <nav className="nav-tabs">
-          <button 
-            className={`nav-tab-btn ${currentTab === 'dashboard' ? 'active' : ''}`}
-            onClick={() => setCurrentTab('dashboard')}
-            id="tab-dashboard"
-          >
-            <Compass size={16} />
-            <span>Dashboard</span>
-            {digestCount > 0 && (
-              <span style={{
-                background: 'var(--accent-amber)',
-                color: '#000',
-                fontSize: '0.65rem',
-                fontWeight: 800,
-                padding: '1px 6px',
-                borderRadius: '9999px',
-                marginLeft: '4px'
-              }}>
-                {digestCount}
-              </span>
-            )}
-          </button>
-
-          <button 
-            className={`nav-tab-btn ${currentTab === 'plan' ? 'active' : ''}`}
-            onClick={() => setCurrentTab('plan')}
-            id="tab-plan"
-          >
-            <BookOpen size={16} />
-            <span>12-Week Curriculum</span>
-          </button>
-
-          <button 
-            className={`nav-tab-btn ${currentTab === 'backlog' ? 'active' : ''}`}
-            onClick={() => setCurrentTab('backlog')}
-            id="tab-backlog"
-          >
-            <Kanban size={16} />
-            <span>Topic Backlog</span>
-          </button>
-
-          <button 
-            className={`nav-tab-btn ${currentTab === 'library' ? 'active' : ''}`}
-            onClick={() => setCurrentTab('library')}
-            id="tab-library"
-          >
-            <Bookmark size={16} />
-            <span>Saved Library</span>
-          </button>
-        </nav>
 
         {/* Header Right Actions */}
         <div className="header-actions">
@@ -159,5 +109,78 @@ export default function Header({
         </div>
       </div>
     </header>
+
+      {/* Secondary Navigation */}
+      <div className="secondary-nav-container">
+        <nav className="nav-tabs">
+          <button 
+            className={`nav-tab-btn ${currentTab === 'dashboard' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('dashboard')}
+            id="tab-dashboard"
+          >
+            <Compass size={16} />
+            <span>Dashboard</span>
+            {digestCount > 0 && (
+              <span style={{
+                background: 'var(--accent-amber)',
+                color: '#000',
+                fontSize: '0.65rem',
+                fontWeight: 800,
+                padding: '1px 6px',
+                borderRadius: '9999px',
+                marginLeft: '4px'
+              }}>
+                {digestCount}
+              </span>
+            )}
+          </button>
+
+          <button 
+            className={`nav-tab-btn ${currentTab === 'plan' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('plan')}
+            id="tab-plan"
+          >
+            <BookOpen size={16} />
+            <span>Skillset Curriculum</span>
+          </button>
+
+          <button 
+            className={`nav-tab-btn ${currentTab === 'backlog' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('backlog')}
+            id="tab-backlog"
+          >
+            <Kanban size={16} />
+            <span>Topic Backlog</span>
+          </button>
+
+          <button 
+            className={`nav-tab-btn ${currentTab === 'crawled_backlog' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('crawled_backlog')}
+            id="tab-crawled-backlog"
+          >
+            <History size={16} />
+            <span>Crawled Items Backlog</span>
+          </button>
+
+          <button 
+            className={`nav-tab-btn ${currentTab === 'backlog' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('backlog')}
+            id="tab-backlog"
+          >
+            <Kanban size={16} />
+            <span>Topic Backlog</span>
+          </button>
+
+          <button 
+            className={`nav-tab-btn ${currentTab === 'library' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('library')}
+            id="tab-library"
+          >
+            <Bookmark size={16} />
+            <span>Saved Library</span>
+          </button>
+        </nav>
+      </div>
+    </>
   );
 }

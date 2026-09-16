@@ -8,7 +8,8 @@ import {
   BookOpen, 
   Layers,
   Edit3,
-  Award 
+  Award,
+  Video
 } from 'lucide-react';
 
 export default function StudyPlan({ 
@@ -169,6 +170,25 @@ export default function StudyPlan({
                         <span className="priority-pill" style={{ fontSize: '0.65rem' }}>
                           {week.skillset_priority || 'P0'}
                         </span>
+
+                        {(() => {
+                          let videoCount = 0;
+                          if (week.youtube_videos) {
+                            try {
+                              const parsed = Array.isArray(week.youtube_videos) ? week.youtube_videos : JSON.parse(week.youtube_videos);
+                              videoCount = parsed.length;
+                            } catch(e) {}
+                          }
+                          if (videoCount > 0) {
+                            return (
+                              <span className="skillset-badge" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--accent-primary)', borderColor: 'var(--accent-primary)', fontSize: '0.65rem' }}>
+                                <Video size={11} />
+                                <span>{videoCount} Video{videoCount > 1 ? 's' : ''} Included</span>
+                              </span>
+                            );
+                          }
+                          return null;
+                        })()}
 
                         <h4 
                           style={{ 

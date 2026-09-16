@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS crawled_resources (
   content_body TEXT NOT NULL,
   key_takeaways TEXT,        -- JSON array of takeaways
   actionable_template TEXT,  -- Ready-to-use template/checklist
+  youtube_videos TEXT,       -- JSON array of fetched YouTube videos
   url TEXT UNIQUE,           -- Unique resource key / slug
   url_hash TEXT UNIQUE,
   status TEXT CHECK(status IN ('pending', 'saved', 'read', 'dismissed')) DEFAULT 'pending',

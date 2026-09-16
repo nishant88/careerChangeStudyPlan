@@ -11,7 +11,8 @@ import {
   BookOpen, 
   Briefcase,
   Layers,
-  ArrowRight
+  ArrowRight,
+  Video
 } from 'lucide-react';
 import FocusTimer from './FocusTimer';
 
@@ -123,6 +124,24 @@ export default function Dashboard({
                             {item.skillset_priority}
                           </span>
                         )}
+                        {(() => {
+                          let videoCount = 0;
+                          if (item.youtube_videos) {
+                            try {
+                              const parsed = Array.isArray(item.youtube_videos) ? item.youtube_videos : JSON.parse(item.youtube_videos);
+                              videoCount = parsed.length;
+                            } catch(e) {}
+                          }
+                          if (videoCount > 0) {
+                            return (
+                              <span className="skillset-badge" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--accent-primary)', borderColor: 'var(--accent-primary)' }}>
+                                <Video size={11} />
+                                <span>{videoCount} Video{videoCount > 1 ? 's' : ''} Included</span>
+                              </span>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
                       <span className="digest-read-time">{item.read_time || '7 min read'}</span>
                     </div>

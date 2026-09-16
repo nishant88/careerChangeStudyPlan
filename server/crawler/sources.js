@@ -401,7 +401,7 @@ Our recommendation is to lock Sprints 4 through 6 for the top 3 WSJF initiatives
  * Generates rich, multi-section masterclasses (120-200 lines) with complete technical breakdowns,
  * concrete code/SQL/architectural schemas, failure postmortems, and interview talking points.
  */
-export function synthesizeInAppLesson(topicTitleOrObj, description, priority = 'high', skillset = 'Technical Architecture') {
+export async function synthesizeInAppLesson(topicTitleOrObj, description, priority = 'high', skillset = 'Technical Architecture') {
   let title = typeof topicTitleOrObj === 'object' && topicTitleOrObj !== null ? topicTitleOrObj.title : topicTitleOrObj;
   let desc = typeof topicTitleOrObj === 'object' && topicTitleOrObj !== null ? topicTitleOrObj.description : description;
   let prio = typeof topicTitleOrObj === 'object' && topicTitleOrObj !== null ? (topicTitleOrObj.priority || priority) : priority;
@@ -411,7 +411,7 @@ export function synthesizeInAppLesson(topicTitleOrObj, description, priority = '
   const readTime = prio === 'high' ? '18 min read' : (prio === 'medium' ? '14 min read' : '10 min read');
   const skillsetPriority = prio === 'high' ? 'P0 - Core TPM Discipline' : (prio === 'medium' ? 'P1 - High-Value Differentiator' : 'P2 - Growth Skillset');
 
-  return {
+  const lesson = {
     title: `Mastery Guide: ${cleanTitle}`,
     domain: 'Internal Architecture Vault',
     skillset: skill,
@@ -534,4 +534,6 @@ The platform requires a scalable, resilient implementation of ${cleanTitle} to s
 - [ ] **Canary Pipeline**: Progressive traffic shifting: 5% (1 hr) -> 25% (2 hrs) -> 100%.
 - [ ] **Executive Memo**: 1-page SCQA decision brief signed off by VP of Engineering and Client Operations Director.`
   };
+  
+  return lesson;
 }
