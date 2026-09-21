@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS weeks (
   read_time TEXT DEFAULT '8 min read',
   completed INTEGER DEFAULT 0,
   completed_at DATETIME,
+  crawled_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   display_order INTEGER NOT NULL,
   notes TEXT
 );
@@ -94,3 +95,25 @@ CREATE TABLE IF NOT EXISTS app_settings (
 CREATE INDEX IF NOT EXISTS idx_crawled_status ON crawled_resources(status);
 CREATE INDEX IF NOT EXISTS idx_crawled_skillset ON crawled_resources(skillset);
 CREATE INDEX IF NOT EXISTS idx_weeks_skillset ON weeks(skillset);
+
+CREATE TABLE IF NOT EXISTS crawl_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  started_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  completed_at DATETIME,
+  status TEXT,
+  items_crawled INTEGER DEFAULT 0,
+  error_message TEXT
+);
+
+CREATE TABLE IF NOT EXISTS job_listings (
+  id TEXT PRIMARY KEY,
+  platform TEXT,
+  title TEXT,
+  company TEXT,
+  location TEXT,
+  skillset_match TEXT,
+  description TEXT,
+  url TEXT,
+  status TEXT DEFAULT 'new', 
+  fetched_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);

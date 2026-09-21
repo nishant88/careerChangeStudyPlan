@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { X, Settings, RefreshCw, Check, Info } from 'lucide-react';
-import { fetchSettings, updateSettings, fetchCrawlerStatus } from '../api';
+import { fetchSettings, updateSettings, fetchCrawlerStatus, fetchCrawlLogs } from '../api';
 
 export default function SettingsModal({ isOpen, onClose, onTriggerCrawl, isCrawling }) {
   const [cronExpr, setCronExpr] = useState('0 7 * * *');
   const [crawlerStatus, setCrawlerStatus] = useState(null);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [crawlLogs, setCrawlLogs] = useState([]);
 
   useEffect(() => {
     if (isOpen) {
@@ -15,6 +16,10 @@ export default function SettingsModal({ isOpen, onClose, onTriggerCrawl, isCrawl
 
       fetchCrawlerStatus().then(data => {
         setCrawlerStatus(data);
+      }).catch(console.error);
+
+      fetchCrawlLogs().then(data => {
+        setCrawlLogs(data);
       }).catch(console.error);
     }
   }, [isOpen]);
@@ -85,6 +90,57 @@ export default function SettingsModal({ isOpen, onClose, onTriggerCrawl, isCrawl
               <RefreshCw size={14} className={isCrawling ? 'streak-flame' : ''} />
               <span>{isCrawling ? 'Crawl in progress...' : 'Execute Crawl Now'}</span>
             </button>
+          </div>
+        </div>
+
+        {/* Crawl Logs */}
+        <div style={{ marginTop: '24px', marginBottom: '24px' }}>
+          <h4 style={{ fontSize: '0.9rem', marginBottom: '12px', color: 'var(--text-primary)' }}>Recent Crawl Logs</h4>
+          <div style={{ 
+            maxHeight: '200px', 
+            overflowY: 'auto', 
+            background: 'var(--bg-primary)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: 'var(--radius-sm)'
+          }}>
+            {crawlLogs.length === 0 ? (
+              <div style={{ padding: '12px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>No crawl logs available yet.</div>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                <thead style={{ background: 'var(--bg-secondary)', position: 'sticky', top: 0 }}>
+                  <tr>
+                    <th style={{ textAlign: 'left', padding: '8px 12px', borderBottom: '1px solid var(--border-subtle)' }}>Started At</th>
+                    <th style={{ textAlign: 'left', padding: '8px 12px', borderBottom: '1px solid var(--border-subtle)' }}>Status</th>
+                    <th style={{ textAlign: 'left', padding: '8px 12px', borderBottom: '1px solid var(--border-subtle)' }}>Found</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {crawlLogs.map(log => (
+                    <tr key={log.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                      <td style={{ padding: '8px 12px', color: 'var(--text-secondary)' }}>
+                        {new Date(log.started_at + 'Z').toLocaleString()}
+                      </td>
+                      <td style={{ padding: '8px 12px' }}>
+                        <span style={{ 
+                          color: log.status === 'success' ? 'var(--accent-emerald)' : log.status === 'error' ? 'var(--accent-amber)' : 'var(--text-muted)',
+                          fontWeight: 600,
+                          textTransform: 'uppercase',
+                          fontSize: '0.75rem'
+                        }}>
+                          {log.status}
+                        </span>
+                        {log.error_message && (
+                          <div style={{ color: 'var(--accent-amber)', fontSize: '0.75rem', marginTop: '4px' }}>{log.error_message}</div>
+                        )}
+                      </td>
+                      <td style={{ padding: '8px 12px', color: 'var(--text-primary)', fontWeight: 600 }}>
+                        {log.items_crawled}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
 

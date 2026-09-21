@@ -411,8 +411,18 @@ export async function synthesizeInAppLesson(topicTitleOrObj, description, priori
   const readTime = prio === 'high' ? '18 min read' : (prio === 'medium' ? '14 min read' : '10 min read');
   const skillsetPriority = prio === 'high' ? 'P0 - Core TPM Discipline' : (prio === 'medium' ? 'P1 - High-Value Differentiator' : 'P2 - Growth Skillset');
 
+  const focusAreas = [
+    "Architectural Patterns & Scaling",
+    "Failure Modes & Postmortems",
+    "Executive Trade-offs & Governance",
+    "Telemetry & Production Readiness",
+    "Advanced Deep-Dive"
+  ];
+  const randomFocus = focusAreas[Math.floor(Math.random() * focusAreas.length)];
+  const generatedTitle = `Mastery Guide: ${cleanTitle} - ${randomFocus}`;
+
   const lesson = {
-    title: `Mastery Guide: ${cleanTitle}`,
+    title: generatedTitle,
     domain: 'Internal Architecture Vault',
     skillset: skill,
     skillset_priority: skillsetPriority,

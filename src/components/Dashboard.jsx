@@ -209,9 +209,9 @@ export default function Dashboard({
           {/* Current Active Week Focus */}
           {currentWeek && (
             <div className="glass-panel week-spotlight-card">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                <span className="spotlight-badge">Curriculum Focus • Week {currentWeek.week_number}</span>
-                <span className="priority-pill">{currentWeek.skillset_priority || 'P0 - Core'}</span>
+              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
+                <span className="spotlight-badge" style={{ marginBottom: 0, whiteSpace: 'nowrap' }}>Curriculum Focus • Week {currentWeek.week_number}</span>
+                <span className="priority-pill" style={{ whiteSpace: 'nowrap' }}>{currentWeek.skillset_priority || 'P0 - Core'}</span>
               </div>
 
               <h3 className="spotlight-title">{currentWeek.title}</h3>

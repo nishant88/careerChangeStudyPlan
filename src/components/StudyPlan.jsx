@@ -9,7 +9,8 @@ import {
   Layers,
   Edit3,
   Award,
-  Video
+  Video,
+  PlayCircle
 } from 'lucide-react';
 
 export default function StudyPlan({ 
@@ -23,6 +24,18 @@ export default function StudyPlan({
   const [activeNotesWeekId, setActiveNotesWeekId] = useState(null);
   const [tempNotes, setTempNotes] = useState('');
   const [selectedSkillset, setSelectedSkillset] = useState('All');
+  const [selectedMonth, setSelectedMonth] = useState('All Time');
+  const [expandedPhases, setExpandedPhases] = useState({});
+
+  React.useEffect(() => {
+    if (phases.length > 0 && Object.keys(expandedPhases).length === 0) {
+      setExpandedPhases({ [phases[0].id]: true });
+    }
+  }, [phases]);
+
+  const togglePhase = (phaseId) => {
+    setExpandedPhases(prev => ({ ...prev, [phaseId]: !prev[phaseId] }));
+  };
 
   const allWeeks = phases.flatMap(p => p.weeks || []);
 
@@ -34,6 +47,22 @@ export default function StudyPlan({
     'Product Strategy',
     'Executive Communication'
   ];
+
+  // Extract unique months for filtering
+  const availableMonths = ['All Time'];
+  allWeeks.forEach(w => {
+    if (w.crawled_at) {
+      // Ensure we parse the DB datetime string properly
+      const dateStr = w.crawled_at.includes('Z') ? w.crawled_at : w.crawled_at + 'Z';
+      const date = new Date(dateStr);
+      if (!isNaN(date)) {
+        const monthStr = date.toLocaleDateString('default', { month: 'long', year: 'numeric' });
+        if (!availableMonths.includes(monthStr)) {
+          availableMonths.push(monthStr);
+        }
+      }
+    }
+  });
 
   const moveWeek = (weekId, direction) => {
     const currentIndex = allWeeks.findIndex(w => w.id === weekId);
@@ -68,9 +97,9 @@ export default function StudyPlan({
     <div>
       <div className="section-header">
         <div>
-          <h2 className="section-title">12-Week TPM & Product In-App Curriculum</h2>
+          <h2 className="section-title">Skillset Curriculum</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '4px' }}>
-            Structured across 3 developmental phases. Every week features a comprehensive in-app master lesson, architectural blueprint, and ready-to-copy workplace template.
+            Structured across developmental phases. Each topic features a comprehensive in-app master lesson, architectural blueprint, and ready-to-copy workplace template.
           </p>
         </div>
 
@@ -80,18 +109,33 @@ export default function StudyPlan({
         </button>
       </div>
 
-      {/* Skillset Filter Pills */}
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '24px' }}>
-        {skillsetsList.map((skill, sIdx) => (
-          <button
-            key={sIdx}
-            className={`nav-tab-btn ${selectedSkillset === skill ? 'active' : ''}`}
-            style={{ fontSize: '0.8rem', padding: '5px 14px' }}
-            onClick={() => setSelectedSkillset(skill)}
+      {/* Skillset Filter Pills & Date Filter */}
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '24px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', flex: 1 }}>
+          {skillsetsList.map((skill, sIdx) => (
+            <button
+              key={sIdx}
+              className={`nav-tab-btn ${selectedSkillset === skill ? 'active' : ''}`}
+              style={{ fontSize: '0.8rem', padding: '5px 14px' }}
+              onClick={() => setSelectedSkillset(skill)}
+            >
+              {skill}
+            </button>
+          ))}
+        </div>
+        
+        <div>
+          <select 
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            className="form-input"
+            style={{ padding: '6px 12px', fontSize: '0.85rem', width: 'auto', background: 'var(--bg-secondary)', borderColor: 'var(--border-subtle)' }}
           >
-            {skill}
-          </button>
-        ))}
+            {availableMonths.map(m => (
+              <option key={m} value={m}>{m === 'All Time' ? 'Filter by Date: All Time' : m}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {phases.map(phase => {
@@ -100,16 +144,32 @@ export default function StudyPlan({
           phaseWeeks = phaseWeeks.filter(w => (w.skillset || '').toLowerCase().includes(selectedSkillset.toLowerCase()));
         }
 
-        if (phaseWeeks.length === 0 && selectedSkillset !== 'All') return null;
+        if (selectedMonth !== 'All Time') {
+          phaseWeeks = phaseWeeks.filter(w => {
+            if (!w.crawled_at) return false;
+            const dateStr = w.crawled_at.includes('Z') ? w.crawled_at : w.crawled_at + 'Z';
+            const date = new Date(dateStr);
+            if (isNaN(date)) return false;
+            return date.toLocaleDateString('default', { month: 'long', year: 'numeric' }) === selectedMonth;
+          });
+        }
+
+        if (phaseWeeks.length === 0 && (selectedSkillset !== 'All' || selectedMonth !== 'All Time')) return null;
 
         const completedInPhase = (phase.weeks || []).filter(w => w.completed).length;
         const phaseProgress = (phase.weeks || []).length > 0 ? Math.round((completedInPhase / (phase.weeks || []).length) * 100) : 0;
 
+        const isExpanded = expandedPhases[phase.id];
+
         return (
           <div key={phase.id} className="curriculum-phase-group">
             {/* Phase Header Card */}
-            <div className="phase-header-card">
-              <div>
+            <div 
+              className="phase-header-card" 
+              onClick={() => togglePhase(phase.id)} 
+              style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+            >
+              <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <h3>{phase.title}</h3>
                   <span style={{ 
@@ -126,14 +186,20 @@ export default function StudyPlan({
                 <p>{phase.description}</p>
               </div>
 
-              {/* Mini Phase Progress Bar */}
-              <div style={{ width: '140px', height: '6px', background: 'var(--bg-input)', borderRadius: '999px', overflow: 'hidden' }}>
-                <div style={{ width: `${phaseProgress}%`, height: '100%', background: 'var(--gradient-emerald)', transition: 'width 0.4s ease' }} />
+              {/* Mini Phase Progress Bar & Chevron */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+                <div style={{ width: '140px', height: '6px', background: 'var(--bg-input)', borderRadius: '999px', overflow: 'hidden' }}>
+                  <div style={{ width: `${phaseProgress}%`, height: '100%', background: 'var(--gradient-emerald)', transition: 'width 0.4s ease' }} />
+                </div>
+                <div style={{ color: 'var(--text-muted)' }}>
+                  {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                </div>
               </div>
             </div>
 
-            {/* Weeks in Phase */}
-            <div className="curriculum-weeks-list">
+            {/* Weeks in Phase (Collapsible) */}
+            {isExpanded && (
+              <div className="curriculum-weeks-list">
               {phaseWeeks.map((week) => {
                 const globalIndex = allWeeks.findIndex(w => w.id === week.id);
                 const canMoveUp = globalIndex > 0;
@@ -153,14 +219,18 @@ export default function StudyPlan({
                     {/* Main Content */}
                     <div className="week-main-info">
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px', flexWrap: 'wrap' }}>
-                        <span style={{ 
-                          fontFamily: 'Outfit', 
-                          fontWeight: 800, 
-                          color: 'var(--accent-primary)',
-                          fontSize: '0.85rem'
-                        }}>
-                          WEEK {week.week_number}
-                        </span>
+
+
+                        <h4 
+                          style={{ 
+                            textDecoration: week.completed ? 'line-through' : 'none',
+                            cursor: 'pointer' 
+                          }}
+                          onClick={() => onOpenReader(week)}
+                          title="Open Master Lesson"
+                        >
+                          {week.title}
+                        </h4>
 
                         <span className="skillset-badge" style={{ fontSize: '0.7rem' }}>
                           <Layers size={10} />
@@ -171,12 +241,19 @@ export default function StudyPlan({
                           {week.skillset_priority || 'P0'}
                         </span>
 
+                        {week.crawled_at && (
+                          <span className="priority-pill" style={{ fontSize: '0.65rem', background: 'rgba(255, 255, 255, 0.05)', color: 'var(--text-secondary)', border: '1px solid var(--border-subtle)' }}>
+                            Crawled: {new Date(week.crawled_at.includes('Z') ? week.crawled_at : week.crawled_at + 'Z').toLocaleDateString()}
+                          </span>
+                        )}
+
                         {(() => {
                           let videoCount = 0;
+                          let parsedVideos = [];
                           if (week.youtube_videos) {
                             try {
-                              const parsed = Array.isArray(week.youtube_videos) ? week.youtube_videos : JSON.parse(week.youtube_videos);
-                              videoCount = parsed.length;
+                              parsedVideos = Array.isArray(week.youtube_videos) ? week.youtube_videos : JSON.parse(week.youtube_videos);
+                              videoCount = parsedVideos.length;
                             } catch(e) {}
                           }
                           if (videoCount > 0) {
@@ -189,17 +266,6 @@ export default function StudyPlan({
                           }
                           return null;
                         })()}
-
-                        <h4 
-                          style={{ 
-                            textDecoration: week.completed ? 'line-through' : 'none',
-                            cursor: 'pointer' 
-                          }}
-                          onClick={() => onOpenReader(week)}
-                          title="Open Master Lesson"
-                        >
-                          {week.title}
-                        </h4>
                       </div>
 
                       <p>{week.learning_goal}</p>
@@ -209,6 +275,8 @@ export default function StudyPlan({
                         <Briefcase size={12} />
                         <span><strong>Workplace Action:</strong> {week.action_item}</span>
                       </div>
+
+
 
                       {/* In-App Master Lesson Button */}
                       <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
@@ -283,6 +351,7 @@ export default function StudyPlan({
                 );
               })}
             </div>
+            )}
           </div>
         );
       })}
