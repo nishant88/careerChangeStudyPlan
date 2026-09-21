@@ -6,6 +6,12 @@ export async function fetchStats() {
   return res.json();
 }
 
+export async function fetchProfileStats() {
+  const res = await fetch(`${API_BASE}/stats/profile`);
+  if (!res.ok) throw new Error('Failed to load profile stats');
+  return res.json();
+}
+
 export async function recordStudySession(minutes) {
   const res = await fetch(`${API_BASE}/stats/study-session`, {
     method: 'POST',
@@ -151,18 +157,46 @@ export async function fetchCrawlerStatus() {
   return res.json();
 }
 
+export async function fetchCrawlLogs() {
+  const res = await fetch(`${API_BASE}/crawler/logs`);
+  if (!res.ok) throw new Error('Failed to fetch crawler logs');
+  return res.json();
+}
+
 export async function fetchSettings() {
   const res = await fetch(`${API_BASE}/settings`);
   if (!res.ok) throw new Error('Failed to load settings');
   return res.json();
 }
 
-export async function updateSettings(settings) {
+export async function updateSettings(data) {
   const res = await fetch(`${API_BASE}/settings`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(settings)
+    body: JSON.stringify(data)
   });
-  if (!res.ok) throw new Error('Failed to save settings');
+  if (!res.ok) throw new Error('Failed to update settings');
+  return res.json();
+}
+
+export async function fetchJobs() {
+  const res = await fetch(`${API_BASE}/jobs`);
+  if (!res.ok) throw new Error('Failed to load jobs');
+  return res.json();
+}
+
+export async function triggerJobFetch() {
+  const res = await fetch(`${API_BASE}/jobs/fetch`, { method: 'POST' });
+  if (!res.ok) throw new Error('Failed to fetch new jobs from APIs');
+  return res.json();
+}
+
+export async function updateJobStatus(id, status) {
+  const res = await fetch(`${API_BASE}/jobs/${encodeURIComponent(id)}/status`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status })
+  });
+  if (!res.ok) throw new Error('Failed to update job status');
   return res.json();
 }

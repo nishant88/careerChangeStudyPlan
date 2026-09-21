@@ -29,6 +29,11 @@ export class CrawlerService {
       VALUES ('crawler_status', 'running')
     `).run();
 
+    const logInsert = db.prepare(`
+      INSERT INTO crawl_logs (status) VALUES ('running')
+    `).run();
+    const logId = logInsert.lastInsertRowid;
+
     try {
       const activeTopics = db.prepare(`
         SELECT t.*, w.week_number 
@@ -47,6 +52,7 @@ export class CrawlerService {
       if (activeTopics.length === 0) {
         console.log('[CrawlerService] No topics marked as "Now".');
         this.updateCrawlerStatus('idle', 0);
+        db.prepare(`UPDATE crawl_logs SET completed_at = CURRENT_TIMESTAMP, status = 'success', items_crawled = 0 WHERE id = ?`).run(logId);
         return { success: true, count: 0, message: 'No active "Now" topics to crawl.' };
       }
 
@@ -216,6 +222,12 @@ export class CrawlerService {
 
       const duration = Date.now() - startTime;
       this.updateCrawlerStatus('idle', totalNewFound);
+      
+      db.prepare(`
+        UPDATE crawl_logs 
+        SET completed_at = CURRENT_TIMESTAMP, status = 'success', items_crawled = ? 
+        WHERE id = ?
+      `).run(totalNewFound, logId);
 
       console.log(`[CrawlerService] In-app lesson synthesis completed in ${duration}ms. ${totalNewFound} lessons generated.`);
       return {
@@ -227,6 +239,11 @@ export class CrawlerService {
     } catch (err) {
       console.error('[CrawlerService] Error during lesson synthesis:', err);
       this.updateCrawlerStatus('error', 0);
+      db.prepare(`
+        UPDATE crawl_logs 
+        SET completed_at = CURRENT_TIMESTAMP, status = 'error', error_message = ? 
+        WHERE id = ?
+      `).run(err.message, logId);
       throw err;
     }
   }

@@ -25,6 +25,7 @@ export default function ResourceLibrary({
   const [selectedTopic, setSelectedTopic] = useState('');
   const [selectedSkillset, setSelectedSkillset] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedMonth, setSelectedMonth] = useState('All Time');
   const [activeNotesId, setActiveNotesId] = useState(null);
   const [notesBuffer, setNotesBuffer] = useState('');
 
@@ -64,6 +65,32 @@ export default function ResourceLibrary({
     onUpdateNotes(id, notesBuffer);
     setActiveNotesId(null);
   };
+
+  const availableMonths = ['All Time'];
+  items.forEach(item => {
+    if (item.found_at) {
+      const dateStr = item.found_at.includes('Z') ? item.found_at : item.found_at + 'Z';
+      const date = new Date(dateStr);
+      if (!isNaN(date)) {
+        const monthStr = date.toLocaleDateString('default', { month: 'long', year: 'numeric' });
+        if (!availableMonths.includes(monthStr)) {
+          availableMonths.push(monthStr);
+        }
+      }
+    }
+  });
+
+  const filteredItems = items.filter(item => {
+    if (selectedMonth !== 'All Time') {
+      if (!item.found_at) return false;
+      const dateStr = item.found_at.includes('Z') ? item.found_at : item.found_at + 'Z';
+      const date = new Date(dateStr);
+      if (isNaN(date) || date.toLocaleDateString('default', { month: 'long', year: 'numeric' }) !== selectedMonth) {
+        return false;
+      }
+    }
+    return true;
+  });
 
   return (
     <div>
@@ -115,6 +142,17 @@ export default function ResourceLibrary({
             ))}
           </select>
 
+          <select 
+            className="form-select" 
+            style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+          >
+            {availableMonths.map(m => (
+              <option key={m} value={m}>{m === 'All Time' ? 'All Time (Date)' : m}</option>
+            ))}
+          </select>
+
           {/* Status Tabs */}
           <div className="nav-tabs" style={{ padding: '2px' }}>
             <button 
@@ -143,70 +181,68 @@ export default function ResourceLibrary({
       </div>
 
       {/* Library Grid */}
-      {items.length === 0 ? (
+      {filteredItems.length === 0 ? (
         <div className="glass-panel empty-digest" style={{ padding: '48px 24px' }}>
           <Bookmark className="empty-digest-icon" style={{ color: 'var(--text-muted)' }} />
-          <h4>No Saved Lessons Found</h4>
-          <p>When you click "Save for Later" on morning topic briefs, they appear here in your permanent in-app knowledge library.</p>
+          <h4>No Saved Items Yet</h4>
+          <p>When you save lessons from your daily digest, they will appear here permanently.</p>
         </div>
       ) : (
         <div className="library-grid">
-          {items.map(item => (
+          {filteredItems.map(item => (
             <div key={item.id} className="glass-panel library-card">
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '10px' }}>
+                  <h3 
+                    style={{ fontSize: '1.05rem', fontWeight: 700, lineHeight: 1.35, cursor: 'pointer', margin: 0 }}
+                    onClick={() => onOpenReader(item)}
+                    title="Open full in-app lesson"
+                  >
+                    {item.title}
+                  </h3>
+
                   <span className="skillset-badge">
                     <Layers size={11} />
                     <span>{item.skillset || 'Program Management'}</span>
                   </span>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    {item.skillset_priority && (
-                      <span className="priority-pill" style={{ fontSize: '0.65rem' }}>
-                        {item.skillset_priority}
-                      </span>
-                    )}
-                    {(() => {
-                      let videoCount = 0;
-                      if (item.youtube_videos) {
-                        try {
-                          const parsed = Array.isArray(item.youtube_videos) ? item.youtube_videos : JSON.parse(item.youtube_videos);
-                          videoCount = parsed.length;
-                        } catch(e) {}
-                      }
-                      if (videoCount > 0) {
-                        return (
-                          <span className="skillset-badge" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--accent-primary)', borderColor: 'var(--accent-primary)' }}>
-                            <Video size={11} />
-                            <span>{videoCount} Video{videoCount > 1 ? 's' : ''} Included</span>
-                          </span>
-                        );
-                      }
-                      return null;
-                    })()}
+                  {item.skillset_priority && (
+                    <span className="priority-pill" style={{ fontSize: '0.65rem' }}>
+                      {item.skillset_priority}
+                    </span>
+                  )}
+                  {(() => {
+                    let videoCount = 0;
+                    if (item.youtube_videos) {
+                      try {
+                        const parsed = Array.isArray(item.youtube_videos) ? item.youtube_videos : JSON.parse(item.youtube_videos);
+                        videoCount = parsed.length;
+                      } catch(e) {}
+                    }
+                    if (videoCount > 0) {
+                      return (
+                        <span className="skillset-badge" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--accent-primary)', borderColor: 'var(--accent-primary)' }}>
+                          <Video size={11} />
+                          <span>{videoCount} Video{videoCount > 1 ? 's' : ''} Included</span>
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()}
 
-                    {item.status === 'read' && (
-                      <span style={{ 
-                        fontSize: '0.7rem', 
-                        fontWeight: 700, 
-                        color: 'var(--accent-emerald)', 
-                        background: 'var(--accent-emerald-subtle)',
-                        padding: '1px 6px',
-                        borderRadius: '4px'
-                      }}>
-                        Read
-                      </span>
-                    )}
-                  </div>
+                  {item.status === 'read' && (
+                    <span style={{ 
+                      fontSize: '0.7rem', 
+                      fontWeight: 700, 
+                      color: 'var(--accent-emerald)', 
+                      background: 'var(--accent-emerald-subtle)',
+                      padding: '1px 6px',
+                      borderRadius: '4px'
+                    }}>
+                      Read
+                    </span>
+                  )}
                 </div>
-
-                <h3 
-                  style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '8px', lineHeight: 1.35, cursor: 'pointer' }}
-                  onClick={() => onOpenReader(item)}
-                  title="Open full in-app lesson"
-                >
-                  {item.title}
-                </h3>
 
                 <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '14px' }}>
                   {item.summary}

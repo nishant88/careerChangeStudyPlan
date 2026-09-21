@@ -13,7 +13,9 @@ import {
   Layers,
   Moon,
   Sun,
-  Video
+  Video,
+  Play,
+  Square
 } from 'lucide-react';
 import { marked } from 'marked';
 
@@ -36,6 +38,13 @@ export default function LessonReaderPage({
   const [copied, setCopied] = useState(false);
   const [personalNotes, setPersonalNotes] = useState('');
   const [notesSaved, setNotesSaved] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      window.speechSynthesis.cancel();
+    };
+  }, []);
 
   // Sync state whenever lesson changes
   useEffect(() => {
@@ -44,6 +53,8 @@ export default function LessonReaderPage({
       setActiveTab('lesson');
       setCopied(false);
       setNotesSaved(false);
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
     }
     
     // Auto switch to paperwhite theme if coming from another theme
@@ -127,6 +138,21 @@ export default function LessonReaderPage({
     }
   };
 
+  const handleToggleSpeech = () => {
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+    } else {
+      const text = `${lesson.title}. ${lesson.summary || ''}. ${lesson.content_body ? lesson.content_body.replace(/[#*_>]/g, '') : ''}`;
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.0;
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = () => setIsSpeaking(false);
+      window.speechSynthesis.speak(utterance);
+      setIsSpeaking(true);
+    }
+  };
+
   return (
     <div className="reader-page-wrapper">
       <header className="reader-page-header">
@@ -148,6 +174,7 @@ export default function LessonReaderPage({
           >
             {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </button>
+
           
           {onSave && (
             <button 
@@ -207,6 +234,25 @@ export default function LessonReaderPage({
             <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
               {stats.words} words
             </span>
+            <span style={{ color: 'var(--border-subtle)' }}>|</span>
+            <button 
+              onClick={handleToggleSpeech} 
+              title={isSpeaking ? "Stop listening" : "Listen to article"}
+              style={{ 
+                background: 'none', 
+                border: 'none', 
+                cursor: 'pointer', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '6px', 
+                color: isSpeaking ? 'var(--accent-primary)' : 'var(--text-muted)', 
+                fontSize: '0.9rem',
+                fontFamily: 'inherit'
+              }}
+            >
+              {isSpeaking ? <Square size={14} /> : <Play size={14} />}
+              <span>{isSpeaking ? "Stop Audio" : "Play Audio"}</span>
+            </button>
           </div>
         </div>
 

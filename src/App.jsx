@@ -9,6 +9,8 @@ import AddWeekModal from './components/AddWeekModal';
 import SettingsModal from './components/SettingsModal';
 import LessonReaderPage from './components/LessonReaderPage';
 import CrawledBacklog from './components/CrawledBacklog';
+import Profile from './components/Profile';
+import JobsBoard from './components/JobsBoard';
 
 import {
   fetchStats,
@@ -28,7 +30,8 @@ import {
   updateLibraryNotes,
   toggleLibraryRead,
   removeLibraryItem,
-  triggerCrawler
+  triggerCrawler,
+  fetchProfileStats
 } from './api';
 
 export default function App() {
@@ -42,6 +45,7 @@ export default function App() {
   const [groupedTopics, setGroupedTopics] = useState({ now: [], next: [], someday: [] });
   const [libraryData, setLibraryData] = useState({ items: [], availableTopics: [], availableSkillsets: [] });
   const [crawledBacklogData, setCrawledBacklogData] = useState({ items: [], availableTopics: [], availableSkillsets: [] });
+  const [profileStats, setProfileStats] = useState(null);
 
   // Reader Modal State
   const [selectedLesson, setSelectedLesson] = useState(null);
@@ -75,13 +79,14 @@ export default function App() {
   // Load all initial data
   const loadAllData = async () => {
     try {
-      const [statsRes, digestRes, planRes, topicsRes, libRes, crawledRes] = await Promise.all([
+      const [statsRes, digestRes, planRes, topicsRes, libRes, crawledRes, profileRes] = await Promise.all([
         fetchStats(),
         fetchDigest(),
         fetchPlan(),
         fetchTopics(),
         fetchLibrary(),
-        fetchLibrary({ status: 'all' })
+        fetchLibrary({ status: 'all' }),
+        fetchProfileStats()
       ]);
 
       setStats(statsRes);
@@ -90,6 +95,7 @@ export default function App() {
       setGroupedTopics(topicsRes.grouped || { now: [], next: [], someday: [] });
       setLibraryData(libRes);
       setCrawledBacklogData(crawledRes);
+      setProfileStats(profileRes);
     } catch (err) {
       console.error('Error loading data:', err);
       showToast('Error connecting to local server');
@@ -167,9 +173,10 @@ export default function App() {
     try {
       await saveDigestItem(id);
       setDigest(prev => prev.filter(item => item.id !== id));
-      const [lib, st] = await Promise.all([fetchLibrary(), fetchStats()]);
+      const [lib, st, prof] = await Promise.all([fetchLibrary(), fetchStats(), fetchProfileStats()]);
       setLibraryData(lib);
       setStats(st);
+      setProfileStats(prof);
       showToast('Saved to your In-App Knowledge Library!');
     } catch (err) {
       console.error(err);
@@ -180,9 +187,10 @@ export default function App() {
     try {
       await markDigestItemRead(id);
       setDigest(prev => prev.filter(item => item.id !== id));
-      const [lib, st] = await Promise.all([fetchLibrary(), fetchStats()]);
+      const [lib, st, prof] = await Promise.all([fetchLibrary(), fetchStats(), fetchProfileStats()]);
       setLibraryData(lib);
       setStats(st);
+      setProfileStats(prof);
       showToast('Lesson completed! Daily streak updated.');
     } catch (err) {
       console.error(err);
@@ -202,9 +210,10 @@ export default function App() {
   const handleToggleWeekComplete = async (weekId, completed) => {
     try {
       await updateWeek(weekId, { completed });
-      const [planRes, statsRes] = await Promise.all([fetchPlan(), fetchStats()]);
+      const [planRes, statsRes, profRes] = await Promise.all([fetchPlan(), fetchStats(), fetchProfileStats()]);
       setPhases(planRes.phases || []);
       setStats(statsRes);
+      setProfileStats(profRes);
       showToast(completed ? 'Week completed! Excellent progress.' : 'Week marked as in progress');
     } catch (err) {
       console.error(err);
@@ -236,10 +245,11 @@ export default function App() {
   const handleAddWeek = async (weekData) => {
     try {
       await addCustomWeek(weekData);
-      const [planRes, topicsRes, statsRes] = await Promise.all([fetchPlan(), fetchTopics(), fetchStats()]);
+      const [planRes, topicsRes, statsRes, profRes] = await Promise.all([fetchPlan(), fetchTopics(), fetchStats(), fetchProfileStats()]);
       setPhases(planRes.phases || []);
       setGroupedTopics(topicsRes.grouped || { now: [], next: [], someday: [] });
       setStats(statsRes);
+      setProfileStats(profRes);
       showToast('Custom week added to curriculum');
     } catch (err) {
       console.error(err);
@@ -324,9 +334,10 @@ export default function App() {
   const handleToggleLibraryRead = async (id) => {
     try {
       await toggleLibraryRead(id);
-      const [lib, st] = await Promise.all([fetchLibrary(), fetchStats()]);
+      const [lib, st, prof] = await Promise.all([fetchLibrary(), fetchStats(), fetchProfileStats()]);
       setLibraryData(lib);
       setStats(st);
+      setProfileStats(prof);
     } catch (err) {
       console.error(err);
     }
@@ -335,9 +346,10 @@ export default function App() {
   const handleRemoveLibraryItem = async (id) => {
     try {
       await removeLibraryItem(id);
-      const [lib, st] = await Promise.all([fetchLibrary(), fetchStats()]);
+      const [lib, st, prof] = await Promise.all([fetchLibrary(), fetchStats(), fetchProfileStats()]);
       setLibraryData(lib);
       setStats(st);
+      setProfileStats(prof);
       showToast('Removed from library');
     } catch (err) {
       console.error(err);
@@ -461,6 +473,15 @@ export default function App() {
             onOpenReader={handleOpenReader}
           />
         )}
+
+        {currentTab === 'profile' && (
+          <Profile 
+            profileStats={profileStats}
+            onOpenReader={handleOpenReader}
+          />
+        )}
+
+        {currentTab === 'jobs' && <JobsBoard />}
       </main>
 
       {/* Modals */}

@@ -10,7 +10,9 @@ import {
   Plus, 
   Settings, 
   Sun, 
-  Moon 
+  Moon,
+  TrendingUp,
+  Briefcase
 } from 'lucide-react';
 
 export default function Header({ 
@@ -162,14 +164,7 @@ export default function Header({
             <span>Crawled Items Backlog</span>
           </button>
 
-          <button 
-            className={`nav-tab-btn ${currentTab === 'backlog' ? 'active' : ''}`}
-            onClick={() => setCurrentTab('backlog')}
-            id="tab-backlog"
-          >
-            <Kanban size={16} />
-            <span>Topic Backlog</span>
-          </button>
+
 
           <button 
             className={`nav-tab-btn ${currentTab === 'library' ? 'active' : ''}`}
@@ -178,6 +173,24 @@ export default function Header({
           >
             <Bookmark size={16} />
             <span>Saved Library</span>
+          </button>
+
+          <button 
+            className={`nav-tab-btn ${currentTab === 'profile' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('profile')}
+            id="tab-profile"
+          >
+            <TrendingUp size={16} />
+            <span>Growth Profile</span>
+          </button>
+
+          <button 
+            className={`nav-tab-btn ${currentTab === 'jobs' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('jobs')}
+            id="tab-jobs"
+          >
+            <Briefcase size={16} />
+            <span>Career Opportunities</span>
           </button>
         </nav>
       </div>

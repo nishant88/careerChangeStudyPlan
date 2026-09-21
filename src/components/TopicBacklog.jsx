@@ -18,6 +18,28 @@ export default function TopicBacklog({
   onOpenAddModal,
   onOpenReader
 }) {
+  const [selectedMonth, setSelectedMonth] = React.useState('All Time');
+
+  const allTopics = [
+    ...(groupedTopics.now || []),
+    ...(groupedTopics.next || []),
+    ...(groupedTopics.someday || [])
+  ];
+
+  const availableMonths = ['All Time'];
+  allTopics.forEach(topic => {
+    if (topic.created_at) {
+      const dateStr = topic.created_at.includes('Z') ? topic.created_at : topic.created_at + 'Z';
+      const date = new Date(dateStr);
+      if (!isNaN(date)) {
+        const monthStr = date.toLocaleDateString('default', { month: 'long', year: 'numeric' });
+        if (!availableMonths.includes(monthStr)) {
+          availableMonths.push(monthStr);
+        }
+      }
+    }
+  });
+
   const columns = [
     {
       id: 'now',
@@ -52,15 +74,37 @@ export default function TopicBacklog({
           </p>
         </div>
 
-        <button className="btn-primary" onClick={onOpenAddModal}>
-          <Plus size={16} />
-          <span>Add New Topic</span>
-        </button>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <select 
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            className="form-input"
+            style={{ padding: '6px 12px', fontSize: '0.85rem', width: 'auto', background: 'var(--bg-secondary)', borderColor: 'var(--border-subtle)' }}
+          >
+            {availableMonths.map(m => (
+              <option key={m} value={m}>{m === 'All Time' ? 'Filter by Date: All Time' : m}</option>
+            ))}
+          </select>
+
+          <button className="btn-primary" onClick={onOpenAddModal}>
+            <Plus size={16} />
+            <span>Add New Topic</span>
+          </button>
+        </div>
       </div>
 
       <div className="kanban-grid">
         {columns.map(col => {
-          const topics = groupedTopics[col.id] || [];
+          let topics = groupedTopics[col.id] || [];
+          if (selectedMonth !== 'All Time') {
+            topics = topics.filter(topic => {
+              if (!topic.created_at) return false;
+              const dateStr = topic.created_at.includes('Z') ? topic.created_at : topic.created_at + 'Z';
+              const date = new Date(dateStr);
+              if (isNaN(date)) return false;
+              return date.toLocaleDateString('default', { month: 'long', year: 'numeric' }) === selectedMonth;
+            });
+          }
           return (
             <div key={col.id} className="kanban-column">
               <div className="kanban-col-header">

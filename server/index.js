@@ -15,6 +15,7 @@ import libraryRoutes from './routes/library.js';
 import statsRoutes from './routes/stats.js';
 import crawlerRoutes from './routes/crawler.js';
 import settingsRoutes from './routes/settings.js';
+import jobsRoutes from './routes/jobs.js';
 
 dotenv.config();
 
@@ -42,6 +43,7 @@ app.use('/api/library', libraryRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/crawler', crawlerRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/jobs', jobsRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
