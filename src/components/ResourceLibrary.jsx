@@ -8,7 +8,9 @@ import {
   BookOpen,
   Layers,
   Award,
-  Video
+  Video,
+  Calendar,
+  Clock
 } from 'lucide-react';
 
 export default function ResourceLibrary({ 
@@ -211,6 +213,19 @@ export default function ResourceLibrary({
                       {item.skillset_priority}
                     </span>
                   )}
+                  {item.found_at && (() => {
+                    const dateStr = item.found_at.includes('Z') ? item.found_at : item.found_at + 'Z';
+                    const date = new Date(dateStr);
+                    if (isNaN(date)) return null;
+                    return (
+                      <span className="skillset-badge" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)', borderColor: 'var(--border-subtle)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <Calendar size={11} />
+                        <span>{date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                        <Clock size={11} style={{ marginLeft: '4px' }} />
+                        <span>{date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+                      </span>
+                    );
+                  })()}
                   {(() => {
                     let videoCount = 0;
                     if (item.youtube_videos) {

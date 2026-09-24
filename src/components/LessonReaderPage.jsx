@@ -10,6 +10,7 @@ import {
   Lightbulb, 
   Edit3, 
   Clock, 
+  Calendar,
   Layers,
   Moon,
   Sun,
@@ -226,6 +227,20 @@ export default function LessonReaderPage({
           )}
 
           <div className="reader-meta-bar">
+            {lesson.found_at && (() => {
+              const dateStr = lesson.found_at.includes('Z') ? lesson.found_at : lesson.found_at + 'Z';
+              const date = new Date(dateStr);
+              if (isNaN(date)) return null;
+              return (
+                <>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                    <Calendar size={14} />
+                    <span>Crawled on {date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })} at {date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+                  </span>
+                  <span style={{ color: 'var(--border-subtle)' }}>|</span>
+                </>
+              );
+            })()}
             <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
               <Clock size={14} />
               <span>{stats.minutes} min read</span>
